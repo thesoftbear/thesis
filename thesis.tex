@@ -18,41 +18,47 @@
 \chapter{Introduction}
 
 \section{Motivation}
-Global illumination allows to visualize complex structures in particle data, that would otherwise remain unseen. Ambient occlusion mimics indirect diffuse light by calculating the level of occlusion for visible surfaces. The calculation of the ambient terms is costly, but several methods exist to approximate it. One of them, Voxel Cone Tracing, uses an discretized voxel representation of the geometry. This requires a method to transfer particles into a voxel grid. Scattering iterates all particles and adds their partial contributions to the intersected voxels. Parallel scattering processes the particles simultaneously, leading to race conditions whenever multiple spheres intersect the same voxel. Synchronization has to assure correct summation of the contributions. As synchronization increases, parallelism decreases. Therefore scattering performs the worse, the more dense the particle data is.
+Global illumination allows to visualize complex structures in particle data, that otherwise would remain unseen. For real-time rendering less expensive approximations like ambient occlusion are used. Ambient occlusion is especially useful for visualization, as it assumes no parameters for illumination and by that introduces no new information. Instead it mimics indirect diffuse light by calculating the level of occlusion for visible surfaces. The calculation of the ambient terms is still costly, but several methods exist to approximate it. One of them, Voxel Cone Tracing, uses an discretized voxel representation of the geometry. This requires a method to transfer particles into a voxel grid. Scattering iterates all particles and adds their partial contributions to the intersected voxels. Parallel scattering processes the particles simultaneously. Synchronization has to assure correct summation of the contributions whenever multiple spheres intersecting the same voxel cause race conditions. As synchronization increases, parallelism decreases. Therefore scattering performs the worse, the more dense the particle data is.
 
 \section{Task}
-To find a particle voxelization technique that better fits the parallel nature of graphics processing units a gathering approach is validated. Gathering determines for each voxel which particles it intersects with. For efficient particle search around voxels an acceleration data structure is required. Starting from an unordered list of particles an algorithm is designed to first build a hashed uniform grid and then use it to calculate the voxel densities. To compare the gathering approach against scattering the construction time is measured for multiple particle clouds of variable density. The created voxel data structure is used to calculate ambient occlusion using voxel cone tracing. To evaluate the quality of the proposed solution a ground truth renderer using ray-casting is implemented.
+To find a particle voxelization technique that better fits the parallel nature of graphics processing units a gathering approach is validated.
+Gathering determines for each voxel which particles it intersects with.
+Contrary to scattering each voxel is processed by an individual thread.
+This ensures that all write operations on one voxel happen sequentially and require no synchronization.
+For efficient particle search around voxels an acceleration data structure is required.
+Starting from an unordered list of particles an algorithm is designed to first build a hashed uniform grid and then use it to calculate the voxel densities.
+To compare the gathering approach against scattering both construction time and memory usage are measured for particle clouds of variable size and density.
+The created voxel data structure is used to calculate ambient occlusion using voxel cone tracing.
+To evaluate the quality of the proposed solution a ground truth renderer using ray-casting is implemented. The influence of both voxelization and voxel cone tracing on the determined error is examined.
 
 \section{Outline}
 
 The work is organized as follows. In chapter 2 related works are discussed. First concerning acceleration data structures on particles, followed by voxelization techniques and finally ambient occlusion for particle data.
-
 Chapter 3 presents the proposed gathering based voxelization technique. 
-
-Chapter 4 details the techniques used to calculate ambient occlusion.
-
+Chapter 4 details the techniques used to calculate ambient occlusion. 
 In chapter 5 implementation details are given.
-
 Chapter 6 finally presents the results of the work.
-
-
 
 \chapter{Related Work}
 
-\chapter{Gathering Voxelization}
-
 \chapter{Ambient Occlusion}
-
-\section{Voxel Cone Tracing}
-cone tracing idea + cone approximation with voxels
-construction of hierarchy
 
 \section{Ray Casting}
 idea + hemisphere sampling
 ray sphere intersection math
 
+\section{Voxel Cone Tracing}
+cone tracing idea + cone approximation with voxels
+construction of hierarchy
 
-\chapter{Implementation}
+\chapter{Gathering Voxelization}
+Review of possible data structures considering requirements of gathering approach.
+\section{NAME OF SELECTED DATASTRUCTURE}
+Presentation of a fast particle access data structure including underlying structure (grid..) and acceleration methods (sorting..).
+\section{Particle Voxelization}
+(basically how to transfer particles to voxel contributions)
+
+\chapter{Algorithm}
 
 \section{Gathering Voxelization}
 
