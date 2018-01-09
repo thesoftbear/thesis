@@ -11,10 +11,14 @@ layout(std430, binding = 1) buffer grid
 {
 	float cell[];
 };
-        
+       
 uniform float cell_size;
 
 uniform float particle_size;
+
+// uniform uint cell_count;
+
+// uniform uint particle_count;
 
 void main()
 {
@@ -26,14 +30,15 @@ void main()
 	
 	// determine potential scattering cells
 
-		uvec3 cell_coordinate = uvec3(particle_position / vec3(cell_size));
+		uvec3 cell_position = uvec3(particle_position / vec3(cell_size));
+
+		uint cell_index = 128 * 128 * cell_position.z + 128 * cell_position.y + cell_position.x;
 
 	// determine neighboring cells
-	
-		
+
+		// ...
 
 	// contribute to cells
 
-		
-
+		atomicAdd(cell[cell_index], 1.f); // wie viel eigentlich? irgendwelche Annahmen hinsichtlich verhältnis particle_size : cell_size? Werte > 1.f
 }

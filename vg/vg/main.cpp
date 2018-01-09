@@ -8,7 +8,7 @@ int main()
 	application a;
 
 	particles p;
-	p.generate(10000000, 0.01f);
+	p.generate(10000, 0.001f);
 
 	grid g(128);
 	g.update(p);

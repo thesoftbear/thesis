@@ -51,24 +51,25 @@ void shader::use()
 	glUseProgram(id);
 }
 
-GLuint shader::compile(string s)
+GLuint shader::compile(string path)
 {
 	GLenum type;
 
-	string extension = s.substr(s.length() - 4, 4);
+	string extension = path.substr(path.length() - 5, 5);
 	if (extension == ".glcs") type = GL_COMPUTE_SHADER;
 	else error("unsupported file");
 
-	std::ifstream file(s);
-	if (!file) error("path is no file");
-	std::stringstream stream;
+	ifstream file(path);
+	if (!file.good()) error("path is no file");
+	stringstream stream;
 	stream << file.rdbuf();
 	file.close();
 
 	GLuint shader = glCreateShader(type);
 
-	glShaderSource(shader, 1, (const GLchar * const *)stream.str().c_str(), 0);
-
+	const char * str = stream.str().c_str();
+	glShaderSource(shader, 1, &str, NULL);
+	
 	glCompileShader(shader);
 
 	GLint result = 0;

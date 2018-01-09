@@ -15,7 +15,7 @@ grid::~grid()
 
 void grid::update(particles & p)
 {
-	shader s( { GL_COMPUTE_SHADER, "" } );
+	shader s("../vg/scattering.glcs");
 
 	s.use();
 
@@ -35,7 +35,7 @@ void grid::update(particles & p)
 
 	_data.bind(1);
 
-	glDispatchCompute(1, 1, 1);
+	// glDispatchCompute(1, 1, 1);
 
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	// glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
