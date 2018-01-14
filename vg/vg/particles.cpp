@@ -1,6 +1,8 @@
 #include "particles.hpp"
 
 #include <random>
+#include <fstream>
+#include <iostream>
 
 particles::particles()
 {
@@ -12,8 +14,6 @@ particles::~particles()
 {
 
 }
-
-
 
 void particles::generate(unsigned int number, float size)
 {
@@ -42,6 +42,30 @@ void particles::generate(unsigned int number, float size)
 void particles::read(string path)
 {
 	// read from mmpld file ...
+
+	ifstream file(path);
+
+	struct
+	{
+		char identifier[6];
+		unsigned short version;
+		unsigned int frames;
+		float bounding_box[6];
+		float clipping_box[6];
+	}
+	header;
+
+	file.read((char *)&header, sizeof(header));
+
+	unsigned long long * offsets = new unsigned long long[header.frames];
+
+	file.read((char *)offsets, sizeof(unsigned long long) * header.frames);
+
+	unsigned long long size;
+
+	file.read((char *)&size, sizeof(unsigned long long));
+
+
 }
 
 unsigned int particles::number()

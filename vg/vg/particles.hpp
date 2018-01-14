@@ -23,4 +23,5 @@ class particles
 		unsigned int _number;
 		float _size;
 		storage _data;
+		// frames :/
 };

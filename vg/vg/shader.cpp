@@ -51,6 +51,12 @@ void shader::use()
 	glUseProgram(id);
 }
 
+void shader::execute(unsigned int x, unsigned int y, unsigned int z)
+{
+	// check if shader is compute shader, if not error, else ...
+	glDispatchCompute(x, y, z);
+}
+
 GLuint shader::compile(string path)
 {
 	GLenum type;
@@ -66,9 +72,9 @@ GLuint shader::compile(string path)
 	file.close();
 
 	GLuint shader = glCreateShader(type);
-
-	const char * str = stream.str().c_str();
-	glShaderSource(shader, 1, &str, NULL);
+	string str = stream.str();
+	const char * c_str = str.c_str();
+	glShaderSource(shader, 1, &c_str, NULL);
 	
 	glCompileShader(shader);
 

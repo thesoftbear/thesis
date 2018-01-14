@@ -10,12 +10,13 @@ class shader
 {
 	public:
 
-		shader(string a);
-		shader(string a, string b);
+		shader(string a); // compute shader
+		shader(string a, string b); // vertex shader + fragment shader
 		~shader();
 
 		void set(string name, float value);
 		void use();
+		void execute(unsigned int x, unsigned int y, unsigned int z);
 
 	private:
 	

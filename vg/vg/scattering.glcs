@@ -9,7 +9,7 @@ layout(std430, binding = 0) buffer particles
 
 layout(std430, binding = 1) buffer grid
 {
-	float cell[];
+	uint cell[];
 };
        
 uniform float cell_size;
@@ -27,12 +27,14 @@ void main()
 		uint particle_index = gl_GlobalInvocationID.x;
 
 		vec3 particle_position = particle[particle_index];
-	
+
 	// determine potential scattering cells
 
 		uvec3 cell_position = uvec3(particle_position / vec3(cell_size));
 
 		uint cell_index = 128 * 128 * cell_position.z + 128 * cell_position.y + cell_position.x;
+
+		float x = particle_size;
 
 	// determine neighboring cells
 
@@ -40,5 +42,5 @@ void main()
 
 	// contribute to cells
 
-		atomicAdd(cell[cell_index], 1.f); // wie viel eigentlich? irgendwelche Annahmen hinsichtlich verhältnis particle_size : cell_size? Werte > 1.f
+		atomicAdd(cell[cell_index], 1); // wie viel eigentlich? irgendwelche Annahmen hinsichtlich verhältnis particle_size : cell_size? Werte > 1.f
 }

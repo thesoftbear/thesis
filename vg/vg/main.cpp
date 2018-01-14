@@ -8,8 +8,9 @@ int main()
 	application a;
 
 	particles p;
-	p.generate(10000, 0.001f);
-
+	//p.generate(10000, 0.001f);
+	p.read("D:/laser.mmpld");
+	
 	grid g(128);
 	g.update(p);
 
