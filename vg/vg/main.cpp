@@ -9,9 +9,10 @@ int main()
 
 	particles p;
 	//p.generate(10000, 0.001f);
-	p.read("D:/laser.mmpld");
-	
-	grid g(128);
+	p.read("C:/Users/Stacknit/Desktop/laser.mmpld");
+	p.select(0);
+
+	grid g(32);
 	g.update(p);
 
 	while (a.step())

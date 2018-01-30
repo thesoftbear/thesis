@@ -7,12 +7,12 @@ class grid
 {
 	public:
 
-		grid(unsigned int size);
+		grid(unsigned int cells);
 		~grid();
 		void update(particles & p);
 
 	private:
 
-		unsigned int _size;
+		unsigned int _cells;
 		storage _data;
 };

@@ -1,0 +1,62 @@
+#version 430
+
+layout(local_size_x = 128) in;
+
+
+// per particle position
+
+layout(std430, binding = 0) buffer particleSSBO
+{
+	vec3 particle[];
+};
+
+
+// per particle surrounding cell
+
+layout(std430, binding = 1) buffer cellsSSBO
+{
+	uint cell[];
+};
+
+
+// per particle position inside cell
+
+layout(std430, binding = 2) buffer indicesSSBO
+{
+	uint index[];
+};
+
+
+// per cell start address
+
+layout(std430, binding = 4) buffer prefixsumSSBO
+{
+	uint prefixsum[];
+};
+
+
+// per cell sorted particles
+
+layout(std430, binding = 5) buffer sortedSSBO
+{
+	vec3 sorted[];
+};
+
+
+uniform uint particle_count;
+
+
+void main()
+{
+	// get particle
+
+		uint particle_index = gl_GlobalInvocationID.x;
+	
+		if(particle_index >= particle_count) return;
+
+	// move to new index
+	
+		uint index = prefixsum[cell[particle_index]] + index[particle_index];
+
+		sorted[index] = particles[particle_index];
+}

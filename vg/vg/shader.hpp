@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define glsl(...) #__VA_ARGS__
+
 class shader
 {
 	public:
@@ -15,6 +17,7 @@ class shader
 		~shader();
 
 		void set(string name, float value);
+		void set(string name, unsigned int value);
 		void use();
 		void execute(unsigned int x, unsigned int y, unsigned int z);
 

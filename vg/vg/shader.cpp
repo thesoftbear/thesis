@@ -42,8 +42,15 @@ shader::~shader()
 void shader::set(string name, float value)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if (location == -1) error("uniform not found");
+	if (location == -1) error("uniform " + name + " not found");
 	else glUniform1f(location, value);
+}
+
+void shader::set(string name, unsigned int value)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	if (location == -1) error("uniform " + name + " not found");
+	else glUniform1ui(location, value);
 }
 
 void shader::use()
@@ -53,7 +60,6 @@ void shader::use()
 
 void shader::execute(unsigned int x, unsigned int y, unsigned int z)
 {
-	// check if shader is compute shader, if not error, else ...
 	glDispatchCompute(x, y, z);
 }
 

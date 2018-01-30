@@ -2,45 +2,117 @@
 
 layout(local_size_x = 128) in;
 
-layout(std430, binding = 0) buffer particles
+
+// per particle position
+
+layout(std430, binding = 0) buffer particleSSBO
 {
-	vec3 particle[];
+	float particle[];
 };
 
-layout(std430, binding = 1) buffer grid
+
+// per voxel density value
+
+layout(std430, binding = 1) buffer densitySSBO
 {
-	uint cell[];
+	uint density[];
 };
        
+
 uniform float cell_size;
+
+uniform uint cell_count;
 
 uniform float particle_size;
 
-// uniform uint cell_count;
+uniform uint particle_count;
 
-// uniform uint particle_count;
+
+const vec3 samples[27] =
+{
+	vec3( 1, 1, 1 ) / 6.0 * cell_size,
+	vec3( 3, 1, 1 ) / 6.0 * cell_size,
+	vec3( 5, 1, 1 ) / 6.0 * cell_size,
+	vec3( 1, 3, 1 ) / 6.0 * cell_size,
+	vec3( 3, 3, 1 ) / 6.0 * cell_size,
+	vec3( 5, 3, 1 ) / 6.0 * cell_size,
+	vec3( 1, 5, 1 ) / 6.0 * cell_size,
+	vec3( 3, 5, 1 ) / 6.0 * cell_size,
+	vec3( 5, 5, 1 ) / 6.0 * cell_size,
+	vec3( 1, 1, 3 ) / 6.0 * cell_size,
+	vec3( 3, 1, 3 ) / 6.0 * cell_size,
+	vec3( 5, 1, 3 ) / 6.0 * cell_size,
+	vec3( 1, 3, 3 ) / 6.0 * cell_size,
+	vec3( 3, 3, 3 ) / 6.0 * cell_size,
+	vec3( 5, 3, 3 ) / 6.0 * cell_size,
+	vec3( 1, 5, 3 ) / 6.0 * cell_size,
+	vec3( 3, 5, 3 ) / 6.0 * cell_size,
+	vec3( 5, 5, 3 ) / 6.0 * cell_size,
+	vec3( 1, 1, 5 ) / 6.0 * cell_size,
+	vec3( 3, 1, 5 ) / 6.0 * cell_size,
+	vec3( 5, 1, 5 ) / 6.0 * cell_size,
+	vec3( 1, 3, 5 ) / 6.0 * cell_size,
+	vec3( 3, 3, 5 ) / 6.0 * cell_size,
+	vec3( 5, 3, 5 ) / 6.0 * cell_size,
+	vec3( 1, 5, 5 ) / 6.0 * cell_size,
+	vec3( 3, 5, 5 ) / 6.0 * cell_size,
+	vec3( 5, 5, 5 ) / 6.0 * cell_size
+};
+
+
+void contribute(uvec3 cell_coordinates, vec3 particle_position)
+{
+	// get cell position
+
+		vec3 cell_position = vec3(cell_coordinates) * cell_size;
+
+	// count sampling points inside particle
+
+		uint count = 0;
+
+		for(uint s = 0; s < 27; s++)
+		{
+			vec3 sample_position = cell_position + samples[s];
+
+			if(length(particle_position - sample_position) >= particle_size) count++;
+		}
+
+	// add count as contribution to cell
+
+		uint cell_index = cell_count * cell_count * cell_coordinates.z + cell_count * cell_coordinates.y + cell_coordinates.x;
+
+		atomicAdd(density[cell_index], count);
+} 
+
 
 void main()
 {
-	// determine particle
+	// get particle
 
 		uint particle_index = gl_GlobalInvocationID.x;
 
-		vec3 particle_position = particle[particle_index];
+		if(particle_index >= particle_count) return;
 
-	// determine potential scattering cells
+		vec3 particle_position = vec3(particle[particle_index * 3], particle[particle_index * 3 + 1], particle[particle_index * 3 + 2]);
+		
+	// get intersected cells
 
-		uvec3 cell_position = uvec3(particle_position / vec3(cell_size));
+		vec3 offset = vec3(particle_size);
 
-		uint cell_index = 128 * 128 * cell_position.z + 128 * cell_position.y + cell_position.x;
+		uvec3 min = clamp(uvec3((particle_position - offset) * float(cell_count)), uvec3(0), uvec3(cell_count - 1));
 
-		float x = particle_size;
+		uvec3 max = clamp(uvec3((particle_position + offset) * float(cell_count)), uvec3(0), uvec3(cell_count - 1));
 
-	// determine neighboring cells
+	// for each cell contribute density
 
-		// ...
-
-	// contribute to cells
-
-		atomicAdd(cell[cell_index], 1); // wie viel eigentlich? irgendwelche Annahmen hinsichtlich verhältnis particle_size : cell_size? Werte > 1.f
+		for(uint z = min.z; z <= max.z; z++)
+		{
+			for(uint y = min.y; y <= max.y; y++)
+			{
+				for(uint x = min.x; x <= max.x; x++)
+				{
+					contribute(uvec3(x, y, z), particle_position);
+				}
+			}
+		}
 }

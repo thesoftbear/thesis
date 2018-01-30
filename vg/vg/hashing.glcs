@@ -1,0 +1,62 @@
+#version 430
+
+layout(local_size_x = 128) in;
+
+
+// per particle position
+
+layout(std430, binding = 0) buffer particleSSBO
+{
+	vec3 particle[];
+};
+
+
+// per particle surrounding cell
+
+layout(std430, binding = 1) buffer cellsSSBO
+{
+	uint cell[];
+};
+
+
+// per particle position inside cell
+
+layout(std430, binding = 2) buffer indicesSSBO
+{
+	uint index[];
+};
+
+
+// per cell particle count
+
+layout(std430, binding = 3) buffer counterSSBO
+{
+	uint count[];
+};
+
+       
+uniform uint cell_count;
+
+uniform uint particle_count;
+
+
+void main()
+{
+	// get particle
+
+		uint particle_index = gl_GlobalInvocationID.x;
+
+		if(particle_index >= particle_count) return;
+
+	// get cell
+
+		uvec3 cell_coordinates = uvec3(particle[particle_index] * float(cell_count));
+
+		uint cell_index = cell_count * cell_count * cell_coordinates.z + cell_count * cell_coordinates.y + cell_coordinates.x;
+
+	// assign
+
+		cell[particle_index] = cell_index;
+
+		index[particle_index] = atomicAdd(count[cell_index], 1);
+}
