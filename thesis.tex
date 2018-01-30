@@ -53,17 +53,16 @@ The assumption is that the more open the scene around a point is, the more indir
 
 To allow scenes with moving objects \cite{22} converts all vertices to disc-shaped occluder elements. Then for each vertex the occlusion value is calculated by adding the form factors of the other occluders. Form factor represents how much occlusion a surface creates depending on disk area and distance to it. As the ambient occlusion term is calculated per vertex, detailed meshes are required to avoid artifacts. The pre-computation prevents this from being suitable for deformable objects.
 
-For scenes with arbitrary geometry it is necessary to recompute ambient occlusion per frame without pre-processing. \cite{29} introduced screen space ambient occlusion, a fast method to approximate the occlusion terms with screen space information only. Instead of sampling polygonal meshes itself first the scene is rendered into a normal and a depth buffer. Each pixel's surrounding pixels are then sampled from these buffers to determine an approximated occlusion factor. Works because ... . Bad because...
+For scenes with arbitrary geometry it is necessary to recompute ambient occlusion per frame without pre-processing. \cite{29} introduced screen space ambient occlusion, a fast method to approximate the occlusion terms with screen space information only. Instead of sampling polygonal meshes itself first the scene is rendered into a normal and a depth buffer. Each pixel's surrounding pixels are then sampled from these buffers to determine an approximated occlusion factor. ( -sampled a sphere around a pixel’s world position -> reproject  samples into depth buffer to determine if occluded
+- for realtime performance aggressive undersampling required ->
+noise -> costly blur step
+)
 
-\cite{30} HBAO -> integral, calculated in half resolution
+A different measure of occlusion is used in \cite{30}. From each sampling point rays in random directions are marched in screen space to find the maximum angle from which light reaches it. These horizon angles are averaged resulting in an estimate of occlusion.  
 
-While these methods provide fast results, they also introduce errors by only considering screen space regions.
+While these methods provide fast results, they also introduce errors by only considering screen space regions. \cite{31} HBAO Filter -> reduce flickering, but some remains due to low resolution... The issue here is that only a single depth value per pixel is considered, ignoring every geometry behind. -> ARTIFACTS AT MOVING OBJECTS BEFORE STATIC. \cite{32} HBAO+ approaches this by seperating static and moving objects to distinct depth buffers. -> reduces but not solves problem -> artifacts with increasing depth complexity. World space methods avoid this by directly sampling the geometry. \cite{32} includes ambient occlusion using voxel cone tracing -> \cite{23} 
 
-\cite{31} HBAO Filter -> reduce flickering, but some remains due to low resolution
-
-The issue here is that (ONLY CLOSEST DEPTH VALUE PER PIXEL, EVERYTHING BEHIND IGNORED -> ARTIFACTS AT MOVING OBJECTS BEFORE STATIC). \cite{32} (HBAO+) approaches this by seperating static and moving objects to distinct depth buffers. -> reduces but not solves problem -> artifacts with increasing depth complexity. World space methods avoid this by directly sampling the geometry. \cite{32} includes ambient occlusion using voxel cone tracing -> \cite{23} 
-
-\cite{10} applies voxel cone tracing to Molecular Dynaics.
+\cite{10} applies voxel cone tracing to Molecular Dynamics.
 
 \cite{9} a grid stores the occupancy information derived from the neighboring atoms
 
