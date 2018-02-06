@@ -7,12 +7,14 @@ class grid
 {
 	public:
 
-		grid(unsigned int cells);
+		grid(unsigned int voxels);
 		~grid();
-		void update(particles & p);
-
+		void save(string path);
+		void update_scattering(particles & p);
+		void update_gathering(particles & p, unsigned int cells);
+	
 	private:
 
-		unsigned int _cells;
+		unsigned int _voxels;
 		storage _data;
 };

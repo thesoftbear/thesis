@@ -1,19 +1,19 @@
 #version 430
 
-layout(local_size_x = 128) in;
+layout(local_size_x = 1024) in;
 
 
 // per particle position
 
-layout(std430, binding = 0) buffer particleSSBO
+layout(std430, binding = 0) readonly buffer particleSSBO
 {
-	vec3 particle[];
+	float particle[];
 };
 
 
 // per particle surrounding cell
 
-layout(std430, binding = 1) buffer cellsSSBO
+layout(std430, binding = 1) readonly buffer cellsSSBO
 {
 	uint cell[];
 };
@@ -21,7 +21,7 @@ layout(std430, binding = 1) buffer cellsSSBO
 
 // per particle position inside cell
 
-layout(std430, binding = 2) buffer indicesSSBO
+layout(std430, binding = 2) readonly buffer indicesSSBO
 {
 	uint index[];
 };
@@ -29,7 +29,7 @@ layout(std430, binding = 2) buffer indicesSSBO
 
 // per cell start address
 
-layout(std430, binding = 4) buffer prefixsumSSBO
+layout(std430, binding = 4) readonly buffer prefixsumSSBO
 {
 	uint prefixsum[];
 };
@@ -37,9 +37,9 @@ layout(std430, binding = 4) buffer prefixsumSSBO
 
 // per cell sorted particles
 
-layout(std430, binding = 5) buffer sortedSSBO
+layout(std430, binding = 6) writeonly buffer sortedSSBO
 {
-	vec3 sorted[];
+	float sorted[];
 };
 
 
@@ -56,7 +56,9 @@ void main()
 
 	// move to new index
 	
-		uint index = prefixsum[cell[particle_index]] + index[particle_index];
+		uint sorted_index = prefixsum[cell[particle_index]] + index[particle_index];
 
-		sorted[index] = particles[particle_index];
+		sorted[sorted_index * 3]     = particle[particle_index * 3];
+		sorted[sorted_index * 3 + 1] = particle[particle_index * 3 + 1];
+		sorted[sorted_index * 3 + 2] = particle[particle_index * 3 + 2];
 }

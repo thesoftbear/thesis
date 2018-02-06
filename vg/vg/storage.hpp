@@ -7,7 +7,7 @@ class storage
 
 		storage();
 		~storage();
-		void set(unsigned int size, void * source = nullptr, GLenum usage = GL_STATIC_DRAW);
+		void set(unsigned int size, void * source = nullptr, GLenum usage = GL_DYNAMIC_DRAW);
 		void get(unsigned int size, void * destination);
 
 		GLuint id();

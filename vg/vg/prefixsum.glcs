@@ -1,11 +1,11 @@
 #version 430
 
-layout(local_size_x = 128) in;
+layout(local_size_x = 1024) in;
 
 
 // per cell particle count
 
-layout(std430, binding = 3) buffer counterSSBO
+layout(std430, binding = 3) readonly buffer counterSSBO
 {
 	uint count[];
 };
@@ -13,13 +13,93 @@ layout(std430, binding = 3) buffer counterSSBO
 
 // per cell start address
 
-layout(std430, binding = 4) buffer prefixsumSSBO
+layout(std430, binding = 4) writeonly buffer prefixsumSSBO
 {
 	uint prefixsum[];
 };
-       
+
+layout(std430, binding = 5) coherent buffer globalSSBO
+{
+	uint global_index;
+	uint global_sum;
+	uint next_index;
+};
+
+shared uint group_index;
+shared uint local_buffer[gl_WorkGroupSize.x];
+shared uint previous_sum;
+
+void adjacent_synchronization()
+{
+	while(atomicAdd(next_index, 0) != group_index) {}
+		
+	previous_sum = global_sum;
+	global_sum += local_buffer[gl_WorkGroupSize.x - 1];
+	atomicAdd(next_index, 1);
+}
 
 void main()
 {
+	// get start cell
 
+		if(gl_LocalInvocationID.x == 0)
+		{
+			group_index = atomicAdd(global_index, 1); // avoids deadlock
+			//group_index = gl_WorkGroupID.x;
+		}
+
+		barrier();
+
+		uint start = (group_index * gl_WorkGroupSize.x + gl_LocalInvocationID.x) * 16; // = gl_GlobalInvocationID.x * 16;
+
+	// vector operations
+
+		vec4 row_1 = vec4(count[start],      count[start + 1],  count[start + 2],  count[start + 3]);
+		vec4 row_2 = vec4(count[start + 4],  count[start + 5],  count[start + 6],  count[start + 7])  + row_1;
+		vec4 row_3 = vec4(count[start + 8],  count[start + 9],  count[start + 10], count[start + 11]) + row_2;
+		vec4 row_4 = vec4(count[start + 12], count[start + 13], count[start + 14], count[start + 15]) + row_3;
+
+		vec4 column_1 = vec4(row_1.x, row_2.x, row_3.x, row_4.x); 
+		vec4 column_2 = vec4(row_1.y, row_2.y, row_3.y, row_4.y) + column_1;
+		vec4 column_3 = vec4(row_1.z, row_2.z, row_3.z, row_4.z) + column_2;
+		vec4 column_4 = vec4(row_1.a, row_2.a, row_3.a, row_4.a) + column_3;
+
+		local_buffer[gl_LocalInvocationID.x] = uint(column_4.a);
+
+		barrier(); 
+
+	// per workgroup prefix & synchronization
+
+		if(gl_LocalInvocationID.x == 0)
+		{
+			for(uint i = 1; i < gl_WorkGroupSize.x; i++)
+			{
+				local_buffer[i] += local_buffer[i - 1];
+			}
+
+			adjacent_synchronization();
+		}
+
+		barrier();
+		
+	// update with previous sum
+
+		uint offset = previous_sum + local_buffer[gl_LocalInvocationID.x] - uint(column_4.a);
+
+		prefixsum[start]      = offset;
+		prefixsum[start + 1]  = uint(column_1.x) + offset;
+		prefixsum[start + 2]  = uint(column_2.x) + offset;
+		prefixsum[start + 3]  = uint(column_3.x) + offset;
+		prefixsum[start + 4]  = uint(column_4.x) + offset;
+		prefixsum[start + 5]  = uint(column_1.y) + offset;
+		prefixsum[start + 6]  = uint(column_2.y) + offset;
+		prefixsum[start + 7]  = uint(column_3.y) + offset;
+		prefixsum[start + 8]  = uint(column_4.y) + offset;
+		prefixsum[start + 9]  = uint(column_1.z) + offset;
+		prefixsum[start + 10] = uint(column_2.z) + offset;
+		prefixsum[start + 11] = uint(column_3.z) + offset;
+		prefixsum[start + 12] = uint(column_4.z) + offset;
+		prefixsum[start + 13] = uint(column_1.a) + offset;
+		prefixsum[start + 14] = uint(column_2.a) + offset;
+		prefixsum[start + 15] = uint(column_3.a) + offset;
 }

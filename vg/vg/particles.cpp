@@ -27,6 +27,8 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(0.f, 1.f);
 
+	cout << "Generating particles ";
+
 	for (unsigned int particle = 0; particle < number; particle++)
 	{
 		float * coordinates = p + 3 * particle;
@@ -34,11 +36,15 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 		coordinates[0] = distribution(generator);
 		coordinates[1] = distribution(generator);
 		coordinates[2] = distribution(generator);
+
+		if (particle % (number / 10) == 0) cout << ".";
 	}
 
-	_data.set(3 * number * sizeof(float), p);
+	_data.set(3 * number * sizeof(float), p, GL_STATIC_DRAW);
 
 	delete[] p;
+
+	cout << " complete." << endl;
 }
 
 void particles::read(string path)

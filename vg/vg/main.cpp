@@ -8,12 +8,16 @@ int main()
 	application a;
 
 	particles p;
-	//p.generate(10000, 0.001f);
-	p.read("C:/Users/Stacknit/Desktop/laser.mmpld");
-	p.select(0);
+	p.generate(1, 60000000, 0.001f);
+	//p.read("C:/Users/Stacknit/Desktop/laser.mmpld");
+	//p.select(0);
 
-	grid g(32);
-	g.update(p);
+	unsigned int voxels = 128;
+	unsigned int cells = 256;
+
+	grid g(voxels);
+	g.update_scattering(p);
+	g.update_gathering(p, cells);
 
 	while (a.step())
 	{
