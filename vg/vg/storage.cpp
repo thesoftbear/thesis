@@ -4,6 +4,7 @@
 storage::storage()
 {
 	glGenBuffers(1, &_id);
+	_size = 0;
 
 	if (glGetError()) error("storage creation failed");
 }
@@ -17,6 +18,8 @@ storage::~storage()
 
 void storage::set(unsigned int size, void * source, GLenum usage)
 {
+	_size = size;
+
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, _id);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, size, source, usage);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -33,6 +36,21 @@ void storage::get(unsigned int size, void * destination)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	if (glGetError()) error("storage get failed");
+}
+
+void storage::clear()
+{
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, _id);
+	GLubyte zero = 0;
+	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &zero);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	if (glGetError()) error("storage clear failed");
+}
+
+unsigned int storage::size()
+{
+	return _size;
 }
 
 GLuint storage::id()

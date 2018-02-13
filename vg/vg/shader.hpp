@@ -12,13 +12,13 @@ class shader
 {
 	public:
 
-		shader(string a); // compute shader
-		shader(string a, string b); // vertex shader + fragment shader
+		shader();
 		~shader();
-
+		void source(string a); // compute shader
+		void source(string a, string b); // vertex shader + fragment shader
+		void use();
 		void set(string name, float value);
 		void set(string name, unsigned int value);
-		void use();
 		void execute(unsigned int x, unsigned int y = 1, unsigned int z = 1);
 
 	private:

@@ -1,5 +1,7 @@
-#include "application.hpp"
+﻿#include "application.hpp"
 #include "error.hpp"
+
+#include <iostream>
 
 application::application()
 {
@@ -20,6 +22,13 @@ application::application()
 	// opengl initialization
 
 	gladLoadGL();
+	glGetError();
+
+	const GLubyte * vendor = glGetString(GL_VENDOR);
+	std::cout << "Vendor: " << vendor << std::endl;
+	
+	const GLubyte * renderer = glGetString(GL_RENDERER);
+	std::cout << "Renderer: " << renderer << std::endl;
 }
 
 application::~application()
@@ -42,6 +51,8 @@ bool application::step()
 	// poll window events
 
 	glfwPollEvents();
+
+	std::cin.get();
 
 	// finish main loop once window closes
 

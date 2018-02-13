@@ -23,7 +23,7 @@
     <ProjectGuid>{ABD9C69A-4481-4523-8898-BB302384C279}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>vg</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -42,8 +42,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -150,7 +150,8 @@
     <ClCompile Include="..\external\glad\src\glad.c" />
     <ClCompile Include="application.cpp" />
     <ClCompile Include="error.cpp" />
-    <ClCompile Include="grid.cpp" />
+    <ClCompile Include="voxelgrid.cpp" />
+    <ClCompile Include="hashgrid.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="particles.cpp" />
     <ClCompile Include="shader.cpp" />
@@ -159,7 +160,8 @@
   <ItemGroup>
     <ClInclude Include="application.hpp" />
     <ClInclude Include="error.hpp" />
-    <ClInclude Include="grid.hpp" />
+    <ClInclude Include="voxelgrid.hpp" />
+    <ClInclude Include="hashgrid.hpp" />
     <ClInclude Include="particles.hpp" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="storage.hpp" />

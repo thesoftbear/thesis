@@ -1,38 +1,30 @@
 #version 430
 
-layout(local_size_x = 1024) in;
+layout(local_size_x = 1) in;
 
 
 // per particle position
 
-layout(std430, binding = 0) readonly buffer particleSSBO
-{
-	float particle[];
-};
+	layout(std430, binding = 0) readonly buffer particleDataSSBO
+	{
+		vec4 particle_data[]; // a: future particle radius
+	};
 
 
-// per particle surrounding cell
+// per particle cell & index inside cell
 
-layout(std430, binding = 1) writeonly buffer cellsSSBO
-{
-	uint cell[];
-};
-
-
-// per particle position inside cell
-
-layout(std430, binding = 2) writeonly buffer indicesSSBO
-{
-	uint index[];
-};
+	layout(std430, binding = 1) writeonly buffer particleInfoSSBO
+	{
+		uvec2 particle_info[]; // x: cell y: index
+	};
 
 
-// per cell particle count
+// per cell particle count & start address
 
-layout(std430, binding = 3) coherent buffer counterSSBO
-{
-	uint count[];
-};
+	layout(std430, binding = 2) coherent buffer cellInfoSSBO
+	{
+		uvec2 cell_info[]; // x: count y: address
+	};
 
        
 uniform uint cell_count;
@@ -48,17 +40,13 @@ void main()
 
 		if(particle_index >= particle_count) return;
 
-		vec3 particle_position = vec3(particle[particle_index * 3], particle[particle_index * 3 + 1], particle[particle_index * 3 + 2]);
-
 	// get cell
 
-		uvec3 cell_coordinates = uvec3(particle_position * cell_count);
+		uvec3 cell_coordinates = uvec3(particle_data[particle_index].xyz * cell_count);
 
-		uint cell_index = cell_count * cell_count * cell_coordinates.z + cell_count * cell_coordinates.y + cell_coordinates.x;
+		uint cell_index = (cell_coordinates.z * cell_count + cell_coordinates.y) * cell_count + cell_coordinates.x;
 
 	// assign
 
-		cell[particle_index] = cell_index;
-
-		index[particle_index] = atomicAdd(count[cell_index], 1);
+		particle_info[particle_index] = uvec2(cell_index, atomicAdd(cell_info[cell_index].x, 1));
 }

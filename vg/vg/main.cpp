@@ -1,27 +1,32 @@
 #include "application.hpp"
 #include "particles.hpp"
 #include "storage.hpp"
-#include "grid.hpp"
+#include "voxelgrid.hpp"
+#include "hashgrid.hpp"
 
 int main()
 {
 	application a;
 
 	particles p;
-	p.generate(1, 60000000, 0.001f);
-	//p.read("C:/Users/Stacknit/Desktop/laser.mmpld");
+	p.generate(1, 20000000, 0.008f);
+	//p.read("E:/laser.mmpld");
+	//p.read("E:/oc_sim42_corrected.mmpld");
 	//p.select(0);
 
-	unsigned int voxels = 128;
-	unsigned int cells = 256;
+	unsigned int voxels = 256;
+	unsigned int cells = 128;
 
-	grid g(voxels);
-	g.update_scattering(p);
-	g.update_gathering(p, cells);
+	voxelgrid v(voxels);
+
+	hashgrid h(cells);
 
 	while (a.step())
 	{
+		v.scatter(p);
 
+		h.insert(p);
+		v.gather(h);
 	}
 
 	return 0;

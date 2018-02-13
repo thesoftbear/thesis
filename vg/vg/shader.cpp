@@ -5,12 +5,20 @@
 #include <fstream>
 #include <sstream>
 
-shader::shader(string a)
+shader::shader()
 {
 	id = glCreateProgram();
+}
 
+shader::~shader()
+{
+	glDeleteProgram(id);
+}
+
+void shader::source(string a)
+{
 	GLuint compiled_a = compile(a);
-	
+
 	glAttachShader(id, compiled_a);
 
 	link();
@@ -18,10 +26,8 @@ shader::shader(string a)
 	glDeleteShader(compiled_a);
 }
 
-shader::shader(string a, string b)
+void shader::source(string a, string b)
 {
-	id = glCreateProgram();
-
 	GLuint compiled_a = compile(a);
 	GLuint compiled_b = compile(b);
 
@@ -32,11 +38,6 @@ shader::shader(string a, string b)
 
 	glDeleteShader(compiled_a);
 	glDeleteShader(compiled_b);
-}
-
-shader::~shader()
-{
-	glDeleteProgram(id);
 }
 
 void shader::set(string name, float value)

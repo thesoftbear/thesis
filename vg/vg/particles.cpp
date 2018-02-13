@@ -22,7 +22,7 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 	_number = number;
 	_size = size;
 
-	float * p = new float[3 * number];
+	float * p = new float[4 * number];
 
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(0.f, 1.f);
@@ -31,7 +31,7 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 
 	for (unsigned int particle = 0; particle < number; particle++)
 	{
-		float * coordinates = p + 3 * particle;
+		float * coordinates = p + 4 * particle;
 
 		coordinates[0] = distribution(generator);
 		coordinates[1] = distribution(generator);
@@ -40,7 +40,7 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 		if (particle % (number / 10) == 0) cout << ".";
 	}
 
-	_data.set(3 * number * sizeof(float), p, GL_STATIC_DRAW);
+	_data.set(4 * number * sizeof(float), p, GL_STATIC_DRAW);
 
 	delete[] p;
 
@@ -81,7 +81,7 @@ void particles::read(string path)
 	float z_range = header.bounding_box[5] - header.bounding_box[2];
 	float max_range = (x_range > y_range) ? ((z_range > x_range) ? z_range : x_range) : ((z_range > y_range) ? z_range : y_range);
 
-	for (unsigned int frame = 0; frame < header.frames && frame < 201; frame++)
+	for (unsigned int frame = 0; frame < header.frames && frame < 1; frame++)
 	{	
 		std::cout << "frame " << frame << " / " << header.frames << std::endl;
 
@@ -127,19 +127,19 @@ void particles::read(string path)
 
 			unsigned long long count = 0;
 			file.read((char *)&count, sizeof(unsigned long long));
-			// std::cout << "count = " << count << std::endl;
+			std::cout << "count = " << count << std::endl;
 
 			float * data = new float[count * 4];
 			file.read((char *)data, sizeof(float) * 4 * count);
 
 			(frame > 0) ? _offset.push_back(_offset[frame - 1]) : _offset.push_back(0);
-			_coordinates.reserve(_coordinates.size() + count * 3);
+			_coordinates.reserve(_coordinates.size() + count * 4);
 			_number = count;
 
 			float min = 1;
 			float max = 0;
 
-			if (frame == 200)
+			if (frame == 0)
 			{
 				for (unsigned int p = 0; p < count; p++)
 				{
@@ -150,6 +150,7 @@ void particles::read(string path)
 					_coordinates.push_back((*x - header.bounding_box[0]) / max_range);
 					_coordinates.push_back((*y - header.bounding_box[1]) / max_range);
 					_coordinates.push_back((*z - header.bounding_box[2]) / max_range);
+					_coordinates.push_back(0);
 				}
 			}
 			delete[] data;
@@ -185,9 +186,9 @@ void particles::select(unsigned int frame)
 	{
 		_current = frame;
 
-		float * start = _coordinates.data() + _offset[frame] * 3 * sizeof(float);
+		float * start = _coordinates.data() + _offset[frame] * 4 * sizeof(float);
 
-		_data.set(_number * 3 * sizeof(float), start);
+		_data.set(_number * 4 * sizeof(float), start);
 	}
 	else
 	{

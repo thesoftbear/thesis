@@ -8,7 +8,8 @@
     <ClCompile Include="particles.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="storage.cpp" />
-    <ClCompile Include="grid.cpp" />
+    <ClCompile Include="hashgrid.cpp" />
+    <ClCompile Include="voxelgrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.hpp" />
@@ -16,7 +17,8 @@
     <ClInclude Include="particles.hpp" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="storage.hpp" />
-    <ClInclude Include="grid.hpp" />
+    <ClInclude Include="hashgrid.hpp" />
+    <ClInclude Include="voxelgrid.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scattering.glcs" />

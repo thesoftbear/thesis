@@ -1,13 +1,13 @@
 #version 430
 
-layout(local_size_x = 1024) in;
+layout(local_size_x = 32) in;
 
 
 // per particle position
 
 layout(std430, binding = 0) readonly buffer particleStorage
 {
-	float particle[];
+	vec4 particle[];
 };
 
 
@@ -103,8 +103,6 @@ void contribute(uvec3 cell_coordinates, vec3 particle_position)
 		atomicAdd(density[cell_index], count);
 } 
 
-// length -> radius^2
-
 void main()
 {
 	// get particle
@@ -113,7 +111,7 @@ void main()
 
 		if(particle_index >= particle_count) return;
 
-		vec3 particle_position = vec3(particle[particle_index * 3], particle[particle_index * 3 + 1], particle[particle_index * 3 + 2]);
+		vec3 particle_position = particle[particle_index].xyz;
 		
 	// get intersected cells
 
@@ -124,7 +122,7 @@ void main()
 		uvec3 max = clamp(uvec3((particle_position + offset) * cell_count), uvec3(0), uvec3(cell_count - 1));
 
 	// for each cell contribute density
-
+		
 		for(uint z = min.z; z <= max.z; z++)
 		{
 			for(uint y = min.y; y <= max.y; y++)
