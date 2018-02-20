@@ -1,6 +1,6 @@
 #version 430
 
-layout(local_size_x = 1) in;
+layout(local_size_x = 32) in;
 
 
 // per particle position
@@ -50,7 +50,7 @@ void main()
 	
 		uvec2 i = particle_info[particle_index];
 
-		uint sorted_index = cell_info[i.x].x + i.y;
+		uint sorted_index = cell_info[i.x].y + i.y;
 		
 		sorted_data[sorted_index] = particle_data[particle_index];
 }

@@ -23,6 +23,10 @@ void voxelgrid::save(string path)
 	unsigned int * buffer = new unsigned int[elements];
 	_voxel_data.get(sizeof(unsigned int) * elements, buffer);
 
+	unsigned int counter = 0;
+	for (unsigned int i = 0; i < elements; i++) if (buffer[i] != 0) counter++;
+	cout << "voxels != 0: " << counter << " (" << buffer[100] << ")" << endl;
+
 	ofstream file(path, ios::binary);
 	file.write((char *)buffer, sizeof(unsigned int) * elements);
 	file.close();
@@ -86,11 +90,13 @@ void voxelgrid::gather(hashgrid & hashgrid)
 	_gather.set("voxel_size", voxel_size);
 	_gather.set("voxel_count", _resolution);
 	_gather.set("cell_count", hashgrid_resolution);
-	float particle_size = 0.008f;
+	float particle_size = 0.005f;
 	_gather.set("particle_size", particle_size);
-	float inside_distance = particle_size + voxel_radius;
-	_gather.set("inside_distance_squared", inside_distance * inside_distance);
-	float outside_distance = particle_size - voxel_radius;
+	float voxel_inside_distance = particle_size - voxel_radius;
+	_gather.set("voxel_inside_distance_squared", voxel_inside_distance * voxel_inside_distance);
+	float particle_inside_distance = voxel_radius - particle_size;
+	_gather.set("particle_inside_distance_squared", particle_inside_distance * particle_inside_distance);
+	float outside_distance = particle_size + voxel_radius;
 	_gather.set("outside_distance_squared", outside_distance * outside_distance);
 	_gather.set("particle_size_squared", particle_size * particle_size);
 
@@ -109,6 +115,4 @@ void voxelgrid::gather(hashgrid & hashgrid)
 	glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &end);
 
 	cout << " gathering: " << double(end - start) / 1000000 << " ms" << endl;
-
-	// save("gathering_v" + to_string(_resolution) + "_g" + to_string(hashgrid_resolution) + ".raw");
 }

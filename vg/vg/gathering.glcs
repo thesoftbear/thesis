@@ -7,7 +7,7 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 	layout(std430, binding = 2) readonly buffer cellInfoSSBO
 	{
-		uvec2 cell_info[];
+		uvec2 cell_info[]; // x: count y: address
 	};
 
 
@@ -26,7 +26,6 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 		uint density[];
 	};
 
-
 uniform float voxel_size;
 
 uniform uint voxel_count;
@@ -35,74 +34,108 @@ uniform uint cell_count;
 
 uniform float particle_size;
 
-uniform float inside_distance_squared;
+uniform float voxel_inside_distance_squared;
+
+uniform float particle_inside_distance_squared;
 
 uniform float outside_distance_squared;
 
 uniform float particle_size_squared;
 
-const vec3 samples[27] =
+const uint lut[256] = uint[256](0, 1, 8, 9, 64, 65, 72, 73, 512, 513, 520, 521, 576, 577, 584, 585, 4096, 4097, 4104, 4105, 4160, 4161, 4168, 4169, 4608, 4609, 4616, 4617, 4672, 4673, 4680, 4681, 32768, 32769, 32776, 32777, 32832, 32833, 32840, 32841, 33280, 33281, 33288, 33289, 33344, 33345, 33352, 33353, 36864, 36865, 36872, 36873, 36928, 36929, 36936, 36937, 37376, 37377, 37384, 37385, 37440, 37441, 37448, 37449, 262144, 262145, 262152, 262153, 262208, 262209, 262216, 262217, 262656, 262657, 262664, 262665, 262720, 262721, 262728, 262729, 266240, 266241, 266248, 266249, 266304, 266305, 266312, 266313, 266752, 266753, 266760, 266761, 266816, 266817, 266824, 266825, 294912, 294913, 294920, 294921, 294976, 294977, 294984, 294985, 295424, 295425, 295432, 295433, 295488, 295489, 295496, 295497, 299008, 299009, 299016, 299017, 299072, 299073, 299080, 299081, 299520, 299521, 299528, 299529, 299584, 299585, 299592, 299593, 2097152, 2097153, 2097160, 2097161, 2097216, 2097217, 2097224, 2097225, 2097664, 2097665, 2097672, 2097673, 2097728, 2097729, 2097736, 2097737, 2101248, 2101249, 2101256, 2101257, 2101312, 2101313, 2101320, 2101321, 2101760, 2101761, 2101768, 2101769, 2101824, 2101825, 2101832, 2101833, 2129920, 2129921, 2129928, 2129929, 2129984, 2129985, 2129992, 2129993, 2130432, 2130433, 2130440, 2130441, 2130496, 2130497, 2130504, 2130505, 2134016, 2134017, 2134024, 2134025, 2134080, 2134081, 2134088, 2134089, 2134528, 2134529, 2134536, 2134537, 2134592, 2134593, 2134600, 2134601, 2359296, 2359297, 2359304, 2359305, 2359360, 2359361, 2359368, 2359369, 2359808, 2359809, 2359816, 2359817, 2359872, 2359873, 2359880, 2359881, 2363392, 2363393, 2363400, 2363401, 2363456, 2363457, 2363464, 2363465, 2363904, 2363905, 2363912, 2363913, 2363968, 2363969, 2363976, 2363977, 2392064, 2392065, 2392072, 2392073, 2392128, 2392129, 2392136, 2392137, 2392576, 2392577, 2392584, 2392585, 2392640, 2392641, 2392648, 2392649, 2396160, 2396161, 2396168, 2396169, 2396224, 2396225, 2396232, 2396233, 2396672, 2396673, 2396680, 2396681, 2396736, 2396737, 2396744, 2396745);
+
+uint hash(uint x, uint y, uint z)
 {
-	vec3( 1, 1, 1 ) / 6.0 * voxel_size,
-	vec3( 3, 1, 1 ) / 6.0 * voxel_size,
-	vec3( 5, 1, 1 ) / 6.0 * voxel_size,
-	vec3( 1, 3, 1 ) / 6.0 * voxel_size,
-	vec3( 3, 3, 1 ) / 6.0 * voxel_size,
-	vec3( 5, 3, 1 ) / 6.0 * voxel_size,
-	vec3( 1, 5, 1 ) / 6.0 * voxel_size,
-	vec3( 3, 5, 1 ) / 6.0 * voxel_size,
-	vec3( 5, 5, 1 ) / 6.0 * voxel_size,
-	vec3( 1, 1, 3 ) / 6.0 * voxel_size,
-	vec3( 3, 1, 3 ) / 6.0 * voxel_size,
-	vec3( 5, 1, 3 ) / 6.0 * voxel_size,
-	vec3( 1, 3, 3 ) / 6.0 * voxel_size,
-	vec3( 3, 3, 3 ) / 6.0 * voxel_size,
-	vec3( 5, 3, 3 ) / 6.0 * voxel_size,
-	vec3( 1, 5, 3 ) / 6.0 * voxel_size,
-	vec3( 3, 5, 3 ) / 6.0 * voxel_size,
-	vec3( 5, 5, 3 ) / 6.0 * voxel_size,
-	vec3( 1, 1, 5 ) / 6.0 * voxel_size,
-	vec3( 3, 1, 5 ) / 6.0 * voxel_size,
-	vec3( 5, 1, 5 ) / 6.0 * voxel_size,
-	vec3( 1, 3, 5 ) / 6.0 * voxel_size,
-	vec3( 3, 3, 5 ) / 6.0 * voxel_size,
-	vec3( 5, 3, 5 ) / 6.0 * voxel_size,
-	vec3( 1, 5, 5 ) / 6.0 * voxel_size,
-	vec3( 3, 5, 5 ) / 6.0 * voxel_size,
-	vec3( 5, 5, 5 ) / 6.0 * voxel_size
+	// return lut[x] + lut[y] << 1 + lut[z] << 2;
+	return (z * cell_count + y) * cell_count + x;
+}
+
+vec3 samples[27] =
+{
+	vec3( -2, -2, -2 ) / 6.0 * voxel_size,
+	vec3(  0, -2, -2 ) / 6.0 * voxel_size,
+	vec3(  2, -2, -2 ) / 6.0 * voxel_size,
+	vec3( -2,  0, -2 ) / 6.0 * voxel_size,
+	vec3(  0,  0, -2 ) / 6.0 * voxel_size,
+	vec3(  2,  0, -2 ) / 6.0 * voxel_size,
+	vec3( -2,  2, -2 ) / 6.0 * voxel_size,
+	vec3(  0,  2, -2 ) / 6.0 * voxel_size,
+	vec3(  2,  2, -2 ) / 6.0 * voxel_size,
+	vec3( -2, -2,  0 ) / 6.0 * voxel_size,
+	vec3(  0, -2,  0 ) / 6.0 * voxel_size,
+	vec3(  2, -2,  0 ) / 6.0 * voxel_size,
+	vec3( -2,  0,  0 ) / 6.0 * voxel_size,
+	vec3(  0,  0,  0 ) / 6.0 * voxel_size,
+	vec3(  2,  0,  0 ) / 6.0 * voxel_size,
+	vec3( -2,  2,  0 ) / 6.0 * voxel_size,
+	vec3(  0,  2,  0 ) / 6.0 * voxel_size,
+	vec3(  2,  2,  0 ) / 6.0 * voxel_size,
+	vec3( -2, -2,  2 ) / 6.0 * voxel_size,
+	vec3(  0, -2,  2 ) / 6.0 * voxel_size,
+	vec3(  2, -2,  2 ) / 6.0 * voxel_size,
+	vec3( -2,  0,  2 ) / 6.0 * voxel_size,
+	vec3(  0,  0,  2 ) / 6.0 * voxel_size,
+	vec3(  2,  0,  2 ) / 6.0 * voxel_size,
+	vec3( -2,  2,  2 ) / 6.0 * voxel_size,
+	vec3(  0,  2,  2 ) / 6.0 * voxel_size,
+	vec3(  2,  2,  2 ) / 6.0 * voxel_size
 };
+
+float factor = voxel_size / 6.0;
 
 uint gather(uint cell_index, vec3 voxel_position)
 {
-	uvec2 i = cell_info[cell_index];
+	uvec2 current_info = cell_info[cell_index];
 
 	uint cell_density = 0;
 
-	for(uint p = 0; p < i.x; p++)
+	for(uint p = 0; p < current_info.x; p++)
 	{
-		vec3 particle_position = sorted[i.y + p].xyz;
-				
+		vec3 particle_position = sorted[current_info.y + p].xyz;
+		
 		vec3 early_vector = particle_position - voxel_position;
 		float squared_distance = dot(early_vector, early_vector);
-		
-		if(squared_distance >= outside_distance_squared) continue;
-		
-		if(squared_distance <= inside_distance_squared)
+	
+		if(squared_distance >= outside_distance_squared)
+		{
+			continue;
+		}
+
+		if(squared_distance <= voxel_inside_distance_squared || squared_distance <= particle_inside_distance_squared)
 		{
 			cell_density += 27;
 			continue;
 		}
 		
+		/*
 		for(uint s = 0; s < 27; s++)
 		{
-			vec3 sample_position = voxel_position + samples[s];
-			vec3 distance_vector = particle_position - sample_position;
+			vec3 distance_vector = particle_position - samples[s];
 			if(dot(distance_vector, distance_vector) <= particle_size_squared) cell_density++;
+		}
+		*/
+
+		vec3 base = particle_position - voxel_position;
+
+		for(uint z = 0; z < 3; z++)
+		{
+			for(uint y = 0; y < 3; y++)
+			{
+				for(uint x = 0; x < 3; x++)
+				{
+					vec3 distance_vector = base - vec3(x, y, z) * factor;
+					if(dot(distance_vector, distance_vector) <= particle_size_squared) cell_density++;
+				}
+			}
 		}
 	}
 
 	return cell_density;
 }
+
+// shared uvec2 local_cell_info[64];
+// shared bool local_presence[64];
+// shared vec4 local_particle_data[1280];
 
 
 void main()
@@ -113,12 +146,37 @@ void main()
 
 		vec3 voxel_position = gl_GlobalInvocationID * voxel_size + vec3(voxel_size * 0.5);
 
+		for(uint i = 0; i < 27; i++) samples[i] += voxel_position;
+
+	// load cell data to local memory
+	
+		/*
+
+		uint thread_index = gl_LocalInvocationIndex;
+		
+		uvec3 target_cell = uvec3((gl_GlobalInvocationID - gl_LocalInvocationID) * voxel_size * cell_count) + gl_LocalInvocationID;
+
+		local_cell_info[gl_LocalInvocationIndex] = cell_info[(target_cell.z * cell_count + target_cell.y) * cell_count + target_cell.x];
+		
+		if(local_cell_info[thread_index].x <= 20) local_presence[thread_index] = true;
+		else local_presence[thread_index] = false;
+
+		uint address = local_cell_info[thread_index].y;
+
+		for(uint p = 0; p < 20; p++)
+		{
+			local_particle_data[thread_index * 20 + p] = sorted[address + p];
+		}
+		
+		barrier();
+
+		*/
+
 	// get search cells
 
 		vec3 offset = vec3(voxel_size * 0.5 + particle_size);
 
 		uvec3 min = clamp(uvec3((voxel_position - offset) * cell_count), uvec3(0), uvec3(cell_count - 1));
-
 		uvec3 max = clamp(uvec3((voxel_position + offset) * cell_count), uvec3(0), uvec3(cell_count - 1));
 
 	// for each cell gather density
@@ -131,7 +189,7 @@ void main()
 			{
 				for(uint x = min.x; x <= max.x; x++)
 				{
-					voxel_density += gather(z * cell_count * cell_count + y * cell_count + x, voxel_position);
+					voxel_density += gather((z * cell_count + y) * cell_count + x, voxel_position);
 				}
 			}
 		}
