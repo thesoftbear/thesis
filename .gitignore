@@ -1,2 +1,16 @@
 
 .DS_Store
+*.ipch
+vg/.vs/vg/v15/.suo
+*.db
+*.opendb
+*.pdb
+*.exe
+*.ilk
+*.iobj
+*.ipdb
+*.obj
+*.tlog
+*.log
+*.idb
+*.nvuser

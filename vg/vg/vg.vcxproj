@@ -103,7 +103,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\external\glad\include;..\external\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\external\glm;..\external\glad\include;..\external\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\external\glad\include;..\external\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\external\glm;..\external\glad\include;..\external\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClCompile Include="..\external\glad\src\glad.c" />
     <ClCompile Include="application.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="error.cpp" />
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="hashgrid.cpp" />
@@ -159,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.hpp" />
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="error.hpp" />
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="hashgrid.hpp" />
@@ -167,7 +169,16 @@
     <ClInclude Include="storage.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="draw_particles.glfs" />
+    <None Include="draw_particles.glvs" />
+    <None Include="gathering2.glcs" />
+    <None Include="gathering3.glcs" />
+    <None Include="mipmap.glcs" />
     <None Include="scattering.glcs" />
+    <None Include="scattering2.glcs" />
+    <None Include="scattering3DTexture.glfs" />
+    <None Include="scattering3DTexture.glgs" />
+    <None Include="scattering3DTexture.glvs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
