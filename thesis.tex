@@ -17,11 +17,11 @@
 
 \chapter{Introduction}
 
-\section{Motivation}
 Modern particle-based simulations contain several millions of particles. With increasing density and depth complexity they require refined rendering techniques for visualization. Local lighting lacks visual cues for depth and occlusion and therefore introduces perception issues.
 Global illumination allows to visualize complex structures in particle data, that otherwise would remain unseen. While ray tracing based techniques converge to exact results, their computation is costly. For real-time rendering less expensive approximations like ambient occlusion are used. Ambient occlusion is especially useful for visualization, as it assumes no parameters for illumination and by that introduces no new information. Instead it mimics indirect diffuse light by calculating the level of occlusion for visible surfaces. The more occluded a surface point is, the less light reaches it and the darker it has to appear. The calculation of the ambient terms is still costly, but several methods exist to approximate it. One of them, Voxel Cone Tracing, uses an discretized voxel representation of the geometry. This requires a method to transfer particles into a voxel grid. Scattering iterates all particles and adds their partial contributions to the intersected voxels. Parallel scattering processes the particles simultaneously. Synchronization has to assure correct summation of the contributions whenever multiple spheres intersect the same voxel causing race conditions. As synchronization increases, parallelism decreases. Therefore scattering performs the worse, the more dense the particle data is. 
 
 \section{Task}
+
 To find a particle voxelization technique that better fits the parallel nature of graphics processing units a gathering approach is validated. Gathering determines for each voxel which particles it intersects with. Contrary to scattering each voxel is processed by an individual thread. This ensures that all write operations on one voxel happen sequentially and require no synchronization. For efficient particle search around voxels an acceleration data structure is required, as exhaustive search on all particles has O(n\textsuperscript{2}) complexity.  
 By sorting particles into spatial bins the search can be limited to near particles. The data structure has to be GPU based, as transferring particles to CPU and back would waste bandwith and synchronization would reduce performance.
 Starting from an unordered list of particles an algorithm is designed to first build a hashed uniform grid and then use it to calculate the voxel densities.
@@ -39,6 +39,31 @@ Chapter 6 finally presents the results of the work.
 
 \chapter{Related Work}
 
+\section{Spatial Particle Search}
+
+Gathering requires an efficient method to retrieve particles in a given region of space. Spatial particle search is related to physical simulation of particles, where properties are determined according to neighboring particles.
+To detect ...
+
+\cite{11} was first to present entirely GPU based particle simulations. As no general purpose compute API was available it was implemented using OpenGL shaders. To create a three-dimensional grid, particle indices were stored in the RGBA channels of a two-dimensional texture. Because only four particles can be stored per grid cell, a small cell size has to be chosen to avoid artifacts. This leads to significant amount of memory occupied by empty cells, as SPH simulations fill the simulation volume in a non uniform way. To avoid reduced performance due to high memory transfer  \cite{6} proposed an adaptive uniform grid for variable sized volumes. Here the computational region is sliced into planes of voxels that are stored as texels. To avoid the wasted memory associated with a high amount of empty cells, only regions that actually contain particles are represented as voxel planes.
+
+Another method using textures to sort data into spatial bins is presented by  \cite{14}. The bins are specified as 2D texture coordinates into a texture array. Each bin is composed of all texels that share it's 2D coordinate, one from each slice. A distinct texture counts the elements in each bin and determines which slice provides the next texel to store the input value in. To represent 3D data this implementation requires a mapping function from spatial coordinates to 2D texture coordinates. As the texture array's depth limits the number of items it does not suit this thesis' task.
+
+The CUDA SDK \cite{5} evaluates the assignment of particles to uniform grid cells with atomic operations against sorting. Atomic operations are used to update the number of particles per cell and in a second array the indices of these particles. With sorting every particle's cell is calculated as a hash. Using radix sort with the hash value as key the particles are then sorted based on their hashes. Finally for each cell it's start in the sorted list is calculated. Due to memory coherence and reduced warp divergence they found that sorting achieves highest performance. Additionally it has shown to be less sensitive to dense and randomly distributed data.
+
+\cite{13} improves the sorting based algorithm presented in \cite{5}. Radix sort works best for... For efficient particle access it is not necessary to sort the particles finer than per bin. Therefore the radix sort used in \cite{5} is replaced with a prefix sum and subsequent counting sort. Once prefix sum calculated bins final address the sorting is achieved by copying each particle to the address of its bin. Additionally they replaced the computation of each bin's particle count with an atomic addition during particle assignment. 
+
+Spatial hashing is also used for collision detection of polygonal meshes in \cite{7}. The domain is implicitly subdivided into uniform grid cells by mapping them to a hash table, avoiding complex data structures. This way the number of elements is only limited by memory capacity and arbitrary non-uniform distributions of objects can be stored.
+CPU only...
+
+\cite{12} implements several algorithms to determine neighbor lists for particle simulation. They state that stenciled cell lists and linear bounding volume hierarchies work better for data sets with variable cutoff radius, while uniform grids are better suited for fixed cutoff radius. In molecular dynamics the cutoff radius is the maximum distance in which particles effect others. As particle search for fixed sized voxels is conceptually equivalent to searching particles within a fixed cutoff radius, the uniform grid approach is most relevant for this work. 
+
+Similarly to this thesis \cite{4} maps particle positions to mesh contributions. They compare a gathering approach to a scattering method. Unlike the method presented in \cite{5, 13} their gathering algorithm uses a fixed amount of storage to assign particles to mesh points. Particles exceeding this storage are stored in a separate list and are scattered in an subsequent step. To perform better than scattering this approach requires the overflow list to be small. This sensitivity to the distribution of particles it is not desired for this thesis.
+
+\cite{8} proposes a memory efficient method to voxelize particles to surfaces. They start with a view adaptive voxel grid and voxelize the particles using splatting. To compress the grid only surface entries and exits are stored, without any representation of the distribution inbetween. The depth values are then connected to create a watertight mesh. While this approach allows efficiently extract the surface of volumetric data this thesis requires a full volumetric representation.
+
+Another class of spatial search algorithms does not try to find neighbors for a given point but ... . This is most relevant for tracing rays through scenes until they hit any geometry. As the ... ,
+hierarchical methods subdivide the scene into regions of increasing resolution as the amount of geometry inside grows. These methods' effectiveness relies on their ability to skip large empty areas. While this allows for efficient traversal of rays with unknown length, for particle gathering only a neighbourhood of limited and constant size is considered. 
+
 \section{Ambient Occlusion}
 
 \cite{19} introduced ambient occlusion as an ambient light illumination model to reproduce effects of indirect light. 
@@ -50,52 +75,45 @@ To allow scenes with moving objects \cite{22} converts all vertices to disc-shap
 
 For scenes with arbitrary geometry it is necessary to recompute ambient occlusion per frame without pre-processing. \cite{29} introduced screen space ambient occlusion, a method to approximate the occlusion terms as a postprocessing pass with screen space information only. Instead of sampling polygonal meshes itself, the scene is rendered into a normal and a depth buffer first. Then each pixel's surrounding pixels are sampled from the buffers to determine an approximated occlusion factor. This is done by sampling a sphere around each pixel's world position. Then each sample is reprojected into depth buffer to determine if it is occluded. For realtime performance undersampling is required, which introduces noise. To counteract, a blur step finalizes the ambient occlusion postprocessig. The method by \cite{33} is conceptually similar but combines the screen space occlusion with occlusion from spherical proxy geometry for far-field occlusion. (!)
 
-A different measure of occlusion is used in \cite{30}. From each sampling point rays in random directions are marched in screen space to find the maximum angle from which light reaches it. These horizon angles are averaged resulting in an estimate of occlusion with the occlusion factor growing proportionally to the angle.
+A different measure of occlusion is used in \cite{30}. From each sampling point rays in random directions are marched in screen space to find the maximum angle from which light falls in. These horizon angles are averaged resulting in an estimate of occlusion with the occlusion factor growing proportionally to the angle.
 
-While these methods provide fast results, they also introduce errors by only considering screen space regions. Artifacts are typically introduced due to the combination of low resolution occlusion approximation and high depth complexity. The issue here is that only a single depth value per pixel is considered, ignoring any geometry behind. \cite{31} reduces flickering using temporal filtering. Ambient occlusion depends only on geometry and is independent of the view. Therefore the last frame's occlusion values can be reprojected to the current view to reduce temporal variance. To avoid trailing effects the pixels are classified into a stable and unstable set and temporal filtering is only applied to the unstable, flickering pixels. 
+While these methods provide fast results, they also introduce errors by only considering screen space regions. Artifacts are typically introduced due to the combination of low resolution occlusion calculation and high depth complexity. The issue here is that only a single depth value per pixel is considered, ignoring any geometry behind. \cite{31} reduces flickering using temporal filtering. Ambient occlusion depends only on geometry and is independent of the view. Therefore the last frame's occlusion values can be reprojected to the current view to reduce temporal variance. To avoid trailing effects the pixels are classified into a stable and unstable set and temporal filtering is only applied to the unstable, flickering pixels. 
 
 Another screen space artifact are halos around objects, when their background is distant. The depth discontinuity between the object's and the background's pixels the horizon sampling. While this applies for every geometry, it is most visible when moving objects pass static ones. \cite{32} approaches this by seperating static and moving objects to distinct depth buffers. While this reduces the error, it does not solve the underlying problem. Due to screen space limitations increasing depth complexity causes increased artifacts. World space methods avoid this by directly sampling the geometry. \cite{32} describes voxel cone tracing as one method to calculate world space ambient occlusion. 
 
-Voxel cone tracing has been introduced by \cite{23}. The fundamental idea is to transfer the geometry into a multiresolution volumetric representation. The voxel representation is then used to sample cones that approximate the amount of geometry in each direction. For each cone a series of increasingly bigger voxels, each from a coarser resolution than before, is sampled along the cones direction.
+Voxel cone tracing has been introduced by \cite{23}. The fundamental idea is to transfer the geometry into a multiresolution volumetric representation. The voxel hierarchy is then used to sample cones, approximating the amount of geometry in that region. For each cone a series of increasingly bigger voxels is sampled along the cones direction, each from a coarser resolution than before. The voxels' density values are blended along
 
 \cite{10} applies voxel cone tracing to molecular dynamics data. A 3D texture is used as voxel data structure into which the particles are voxelized. To create the coarser resolutions the texture is mipmapped. The particles are then rendered using raycasting. For each pixel three cones are traced around the normal.
 
 In \cite{9} a grid stores the occupancy information derived from the neighboring atoms.
 
-\section{Spatial Search Data Structures}
-
-Gathering requires an efficient method to retrieve particles in a given region of space. Neighboring particle search is related to physical simulation of particles, where movement is determined by the properties of surrounding particles.
-
-\cite{11} was first to present entirely GPU based particle simulations. As no general purpose compute API was available it was implemented using OpenGL shaders. To create a three-dimensional grid, particle indices were stored in the RGBA channels of a two-dimensional texture. Because only four particles can be stored per grid cell, a small cell size has to be chosen to avoid artifacts. This leads to significant amount of memory occupied by empty cells, as SPH simulations fill the simulation volume in a non uniform way. To avoid reduced performance due to high memory transfer  \cite{6} proposed an adaptive uniform grid for variable sized volumes. Here the computational region is sliced into planes of voxels that are stored as texels. To avoid the wasted memory associated with a high amount of empty cells, only regions that actually contain particles are represented as voxel planes.
-
-Another method using textures to sort data into spatial bins is presented by  \cite{14}. The bins are specified as 2D texture coordinates into a texture array. Each bin is composed of all texels that share it's 2D coordinate, one from each slice. A distinct texture counts the elements in each bin and determines which slice provides the next texel to store the input value in. To represent 3D data this implementation requires a mapping function from spatial coordinates to 2D texture coordinates. As the texture array's depth limits the number of items it does not suit this thesis' task.
-
-The CUDA SDK \cite{5} evaluates the assignment of particles to uniform grid cells with atomic operations against sorting. Atomic operations are used to update the number of particles per cell and in a second array the indices of these particles. With sorting every particle's cell is calculated as a hash. Using radix sort with the hash value as key the particles are then sorted based on their hashes. Finally for each cell it's start in the sorted list is calculated. Due to memory coherence and reduced warp divergence they found that sorting achieves highest performance. Additionally it has shown to be less sensitive to dense and randomly distributed data.
-
-\cite{13} improves the sorting based algorithm presented in \cite{5}. For efficient particle access it is not necessary to sort the particles finer than per bin. Therefore the radix sort used in \cite{5} is replaced with a prefix sum and subsequent counting sort. Once prefix sum calculated bins final address the sorting is achieved by copying each particle to the address of its bin. Additionally they replaced the computation of each bin's particle count with an atomic addition during particle assignment. These optimizations allowed to significantly reduce the kernel calls per frame from 14 to 4 and increase performance.
-
-Spatial hashing is also used for collision detection in  \cite{7}. The domain is implicitly subdivided into uniform grid cells by mapping them to a hash table, avoiding complex data structures. This way the number of elements is only limited by memory capacity and arbitrary non-uniform distributions of objects can be stored.
-
-\cite{12} implements several algorithms to determine neighbor lists. They state that stenciled cell lists and linear bounding volume hierarchies work better for data sets with variable cutoff radius, while uniform grids are better suited for fixed cutoff radius. In molecular dynamics the cutoff radius is the maximum distance in which particles can effect each other. Note that particle search for fixed sized voxels is conceptually equivalent to searching particles within a fixed cutoff radius.
-
-Similarly to this thesis \cite{4} maps particle positions to mesh contributions. They compare a gathering approach to a scattering method. Unlike the method presented in \cite{5, 13} their gathering algorithm uses a fixed amount of storage to assign particles to mesh points. Particles exceeding this storage are stored in a separate list and are scattered in an subsequent step. To perform better than scattering this approach requires the overflow list to be small.
-
-\cite{8} proposes a memory efficient method to voxelize particles to surfaces. They start with a view adaptive voxel grid and voxelize the particles using splatting. To compress the grid only surface entries and exits are stored. The depth values are then connected to create a watertight mesh. While this approach works for surfaces this thesis requires a full volumetric representation.
-
-Another class of algorithms does not try to find nearest neighbors for a given point...
-Hierarchical methods that subdivide regions into subregions of increasing resolution depending on the amount of geometry inside... These methods' effectiveness relies on their ability to skip large empty areas. While this allows for efficient traversal of rays with unknown length, for particle gathering only a small and constant sized neighbourhood is considered.
-
 \chapter{Ambient Occlusion}
 
 \section{Ray Casting}
+
 idea + hemisphere sampling
-ray sphere intersection math
+
+\paragraph{Ray Sphere Intersection}
+
+Math - not even once
 
 \section{Voxel Cone Tracing}
 cone tracing idea + cone approximation with voxels
 construction of hierarchy
 
-\chapter{Particle Gathering}
+\chapter{Particle Voxelization}
+
+\section{Scattering Method}
+
+unregelmäßig -> regelmäßig
+
+\paragraph{Disadvantages}
+
+\section{Gathering Method}
+
+regelmäßig -> unregelmäßig
+
+\paragraph{Data Structures}
 
 Review of possible data structures considering requirements of gathering approach.
 
@@ -103,14 +121,23 @@ Review of possible data structures considering requirements of gathering approac
 
 Presentation of a fast particle access data structure including underlying structure (grid..) and acceleration methods (sorting..).
 
-\subsection{Prefix Sum}
+hash grid = uniform grid = cell lists = buckets = bins
 
-\subsection{Counting Sort}
+\subsection{Spatial Hashing}
 
-\section{Particle Voxelization}
+\subsection{Address Calculation}
 
-basically how to transfer particles to voxel contributions
--> sampling
+Prefix sum
+
+\subsection{Particle Sorting}
+
+Counting Sort
+
+\subsection{Particle Gathering}
+
+Voxel -> Hash Cells -> Particles
+
++ how to transfer particles to voxel contributions -> sampling
 
 \chapter{Algorithm}
 
@@ -118,19 +145,39 @@ basically how to transfer particles to voxel contributions
 
 \section{Software Architecture}
 
-\section{Grid Construction}
+\subsection{Design Considerations}
 
-hash grid = uniform grid = cell lists = buckets = bins
+\section{Hashed Uniform Grid Construction}
 
-\paragraph{Assignment Step}
+\subsection{Spatial Hashing}
 
-\paragraph{Prefix Sum}
+Different Hashing Strategies? Linear, Morton, 2x2x2Block
 
-\paragraph{Particle Relocation}
+\subsection{Address Calculation}
+
+\subsection{Particle Sorting}
 
 \section{Particle Voxelization}
 
-\section{Realtime Rendering}
+\subsection{Scattering}
+
+\subsection{Gathering}
+
+? multiple variants
+
+\subsection{X}
+
+\section{Particle Rendering}
+
+\subsection{Conservative Rasterization}
+
+\subsection{Perspective Projection}
+
+Raycasting
+
+\section{Ambient Occlusion}
+
+\subsection{Voxel Cone Tracing}
 
 -> Voxel Cone Tracing
 
@@ -138,7 +185,7 @@ hash grid = uniform grid = cell lists = buckets = bins
 
 -> variable cone size + variable voxel grid size for comparison
 
-\section{Ground Truth Rendering}
+\subsection{Ray Casting}
 
 -> GPU Raycast on spheres
 
@@ -150,17 +197,27 @@ hash grid = uniform grid = cell lists = buckets = bins
 
 \section{Evaluation}
 
-1. Qualitativ
+\subsection{Voxelization Quality}
 
-VCT on standard resolution grid - ray tracing on particle data -> Fehlerquellen:
+einfluss von verschiedenen parametern auf fehler -> voxel auflösung, anzahl cones
+
+Vergleich: VCT mit ray casting auf partik data -> Fehlerquellen:
 
 VCT on high resolution grid -> voxelization error
 
 Ray casting/Fine cones on voxel grid -> cone tracing error
 
-2. Quantitativ
+\subsection{Runtime Performance}
 
-Scattering vs Gathering Performance + Speicherverbrauch
+Scattering vs Gathering Performance
+
+Einzelne Schritte des Gatherings
+
+Teuerste Schritte in shadern
+
+\subsection{Memory Consumption}
+
+...
 
 \section{Discussion}
 
