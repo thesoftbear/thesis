@@ -3,6 +3,10 @@
 #include "glad\glad.h"
 #include "GLFW\glfw3.h"
 
+#include <chrono>
+
+using namespace std;
+
 class application
 {
 	public:
@@ -11,8 +15,10 @@ class application
 		~application();
 
 		bool step();
+	
 
 	private:
 
 		GLFWwindow * window;
+		chrono::high_resolution_clock::time_point lastStep;
 };

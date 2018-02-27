@@ -5,10 +5,18 @@
 #include <fstream>
 #include <iostream>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
+#include "gtc\matrix_transform.hpp"
+#include "gtx\quaternion.hpp"
+#include "glm.hpp"
+
 particles::particles()
 {
 	_number = 0;
 	_size = 0.f;
+
+	_draw.source("../vg/draw_particles.glvs", "../vg/draw_particles.glfs");
 }
 
 particles::~particles()
@@ -199,4 +207,37 @@ void particles::select(unsigned int frame)
 storage & particles::data()
 {
 	return _data;
+}
+
+float particle_offset = 0.f;
+
+void particles::draw()
+{
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
+
+	particle_offset += 0.0001f;
+	if (particle_offset >= 1.f) particle_offset = 0.f;
+	mat4 rotation =	toMat4(quat(vec3(0, radians(particle_offset * 360), 0)));
+
+	mat4 model = rotation * translation;
+
+	mat4 view = lookAt(vec3(0, 0, particle_offset + 0.5f), vec3(0, 0, 0), vec3(0, 1, 0));
+
+	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.1f, 10.f);
+
+	_draw.use();
+	_data.bind(0);
+	_draw.set("modelMatrix", model);
+	_draw.set("viewMatrix", view);
+	_draw.set("projectionMatrix", projection);
+	_draw.set("particleSize", _size);
+	_draw.execute(GL_POINTS, 0, _number);
+
+	glDeleteVertexArrays(1, &vao);
 }

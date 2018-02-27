@@ -11,6 +11,9 @@ class hashgrid
 		void resize(unsigned int resolution);
 		void insert(particles & particles);
 		void get(unsigned int & resolution, storage * & info, storage * & particles);
+		storage & get_cell_info();
+		storage & get_particle_data();
+		unsigned int get_resolution();
 
 	private:
 

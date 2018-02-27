@@ -37,6 +37,7 @@ layout(local_size_x = 32) in;
 
 uniform uint particle_count;
 
+#pragma optimize (off)
 
 void main()
 {

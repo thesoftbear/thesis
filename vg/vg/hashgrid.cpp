@@ -195,7 +195,7 @@ void hashgrid::insert(particles & particles)
 		glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
 
 		time += double(time_1 - time_0) / 1000000;
-		cout << " sorting: " << double(time_1 - time_0) / 1000000 << " ms";
+		cout << " sorting: " << double(time_1 - time_0) / 1000000 << " ms" << endl;
 
 	// verify sorting
 
@@ -227,4 +227,19 @@ void hashgrid::get(unsigned int & resolution, storage * & info, storage * & part
 	resolution = _resolution;
 	info = &_cell_info;
 	particles = &_sorted_particles;
+}
+
+storage & hashgrid::get_cell_info()
+{
+	return _cell_info;
+}
+
+storage & hashgrid::get_particle_data()
+{
+	return _sorted_particles;
+}
+
+unsigned int hashgrid::get_resolution()
+{
+	return _resolution;
 }

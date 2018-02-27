@@ -1,7 +1,6 @@
 #version 430
 
-layout(local_size_x = 4, local_size_y = 4, local_size_z = 2) in;
-
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 // per cell particle count & start address
 
@@ -27,19 +26,12 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 2) in;
 	};
 
 uniform float voxel_size;
-
 uniform uint voxel_count;
-
 uniform uint cell_count;
-
 uniform float particle_size;
-
 uniform float voxel_inside_distance_squared;
-
 uniform float particle_inside_distance_squared;
-
 uniform float outside_distance_squared;
-
 uniform float particle_size_squared;
 
 uint hash(uint x, uint y, uint z)
@@ -49,16 +41,20 @@ uint hash(uint x, uint y, uint z)
 
 float factor = voxel_size / 6.0;
 
+uint readPosition = gl_LocalInvocationIndex;
+
 uint gather(uint cell_index, vec3 voxel_position)
 {
 	uvec2 current_info = cell_info[cell_index];
 
 	uint cell_density = 0;
 
-	for(uint p = 0; p < current_info.x; p++)
+	while(readPosition < current_info.x)
 	{
-		vec3 particle_position = sorted[current_info.y + p].xyz;
+		vec3 particle_position = sorted[current_info.y + readPosition].xyz;
 		
+		readPosition += 32;
+
 		vec3 early_vector = particle_position - voxel_position;
 		float squared_distance = dot(early_vector, early_vector);
 	
@@ -72,7 +68,7 @@ uint gather(uint cell_index, vec3 voxel_position)
 			cell_density += 270;
 			continue;
 		}
-
+	
 		vec3 base = particle_position - voxel_position;
 
 		for(uint z = 0; z < 3; z++)
@@ -88,6 +84,8 @@ uint gather(uint cell_index, vec3 voxel_position)
 		}
 	}
 
+	readPosition %= current_info.x;
+
 	return cell_density;
 }
 
@@ -95,9 +93,7 @@ void main()
 {
 	// get voxel
 
-		// if(gl_GlobalInvocationID.x >= voxel_count || gl_GlobalInvocationID.y >= voxel_count || gl_GlobalInvocationID.z >= voxel_count) return;
-
-		vec3 voxel_position = gl_GlobalInvocationID * voxel_size + vec3(voxel_size * 0.5);
+		vec3 voxel_position = gl_WorkGroupID * voxel_size + vec3(voxel_size * 0.5);
 
 	// get search cells
 
@@ -107,9 +103,9 @@ void main()
 		uvec3 max = clamp(uvec3((voxel_position + offset) * cell_count), uvec3(0), uvec3(cell_count - 1));
 
 	// for each cell gather density
-
-		uint voxel_density = 0;
 		
+		uint voxel_density = 0;
+
 		for(uint z = min.z; z <= max.z; z++)
 		{
 			for(uint y = min.y; y <= max.y; y++)
@@ -121,10 +117,8 @@ void main()
 			}
 		}
 
-	// store density to voxel
+		uint voxel_index = (gl_WorkGroupID.z * voxel_count + gl_WorkGroupID.y) * voxel_count + gl_WorkGroupID.x;
 
-		uint voxel_index = (gl_GlobalInvocationID.z * voxel_count + gl_GlobalInvocationID.y) * voxel_count + gl_GlobalInvocationID.x;
-		
-		density[voxel_index] = voxel_density;
+		atomicAdd(density[voxel_index], voxel_density);
 }
 

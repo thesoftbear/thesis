@@ -3,6 +3,13 @@
 
 #include <iostream>
 
+void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		type, severity, message);
+}
+
 application::application()
 {
 	// glfw initialization
@@ -19,9 +26,10 @@ application::application()
 
 	glfwMakeContextCurrent(window);
 
-	// opengl initialization
+	// OpenGL initialization
 
 	gladLoadGL();
+
 	glGetError();
 
 	const GLubyte * vendor = glGetString(GL_VENDOR);
@@ -29,6 +37,11 @@ application::application()
 	
 	const GLubyte * renderer = glGetString(GL_RENDERER);
 	std::cout << "Renderer: " << renderer << std::endl;
+
+	lastStep = chrono::high_resolution_clock::now();
+
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
 }
 
 application::~application()
@@ -40,6 +53,14 @@ application::~application()
 
 bool application::step()
 {
+	// update camera
+
+	auto now = chrono::high_resolution_clock::now();
+
+	float elapsed = chrono::duration_cast<chrono::microseconds>(now - lastStep).count() / 1000.f;
+
+	lastStep = now;
+
 	// swap buffers
 
 	glfwSwapBuffers(window);
@@ -51,8 +72,6 @@ bool application::step()
 	// poll window events
 
 	glfwPollEvents();
-
-	std::cin.get();
 
 	// finish main loop once window closes
 

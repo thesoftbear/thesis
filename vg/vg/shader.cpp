@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 shader::shader()
 {
@@ -24,6 +25,8 @@ void shader::source(string a)
 	link();
 
 	glDeleteShader(compiled_a);
+
+	compute = true;
 }
 
 void shader::source(string a, string b)
@@ -38,6 +41,27 @@ void shader::source(string a, string b)
 
 	glDeleteShader(compiled_a);
 	glDeleteShader(compiled_b);
+
+	compute = false;
+}
+
+void shader::source(string a, string b, string c)
+{
+	GLuint compiled_a = compile(a);
+	GLuint compiled_b = compile(b);
+	GLuint compiled_c = compile(c);
+
+	glAttachShader(id, compiled_a);
+	glAttachShader(id, compiled_b);
+	glAttachShader(id, compiled_c);
+
+	link();
+
+	glDeleteShader(compiled_a);
+	glDeleteShader(compiled_b);
+	glDeleteShader(compiled_c);
+
+	compute = false;
 }
 
 void shader::set(string name, float value)
@@ -54,6 +78,13 @@ void shader::set(string name, unsigned int value)
 	else glUniform1ui(location, value);
 }
 
+void shader::set(string name, mat4 value)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	if (location == -1) error("uniform " + name + " not found");
+	else glUniformMatrix4fv(location, 1, false, &value[0][0]);
+}
+
 void shader::use()
 {
 	glUseProgram(id);
@@ -61,7 +92,11 @@ void shader::use()
 
 void shader::execute(unsigned int x, unsigned int y, unsigned int z)
 {
-	glDispatchCompute(x, y, z);
+	if (compute) glDispatchCompute(x, y, z);
+	else glDrawArrays(x, y, z);
+
+	size_t e = glGetError();
+	if (e != GL_NO_ERROR) error("shader execution " + to_string(e));
 }
 
 GLuint shader::compile(string path)
@@ -70,6 +105,9 @@ GLuint shader::compile(string path)
 
 	string extension = path.substr(path.length() - 5, 5);
 	if (extension == ".glcs") type = GL_COMPUTE_SHADER;
+	else if (extension == ".glvs") type = GL_VERTEX_SHADER;
+	else if (extension == ".glfs") type = GL_FRAGMENT_SHADER;
+	else if (extension == ".glgs") type = GL_GEOMETRY_SHADER;
 	else error("unsupported file");
 
 	ifstream file(path);
