@@ -11,6 +11,8 @@
     <ClCompile Include="hashgrid.cpp" />
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ambientocclusion.cpp" />
+    <ClCompile Include="geometry_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.hpp" />
@@ -21,17 +23,23 @@
     <ClInclude Include="hashgrid.hpp" />
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="ambientocclusion.hpp" />
+    <ClInclude Include="geometry_buffer.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="scattering.glcs" />
     <None Include="mipmap.glcs" />
     <None Include="gathering2.glcs" />
     <None Include="gathering3.glcs" />
-    <None Include="scattering2.glcs" />
     <None Include="draw_particles.glvs" />
     <None Include="draw_particles.glfs" />
-    <None Include="scattering3DTexture.glvs" />
-    <None Include="scattering3DTexture.glgs" />
-    <None Include="scattering3DTexture.glfs" />
+    <None Include="scattering_sorted.glcs" />
+    <None Include="scattering_unsorted.glcs" />
+    <None Include="scattering_texture.glfs" />
+    <None Include="scattering_texture.glgs" />
+    <None Include="scattering_texture.glvs" />
+    <None Include="cone_tracing.glcs" />
+    <None Include="scattering_sorted2.glcs" />
+    <None Include="ray_casting.glfs" />
+    <None Include="fullscreen_quad.glvs" />
   </ItemGroup>
 </Project>

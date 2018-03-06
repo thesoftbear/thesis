@@ -5,9 +5,7 @@
 
 void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
-	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-		type, severity, message);
+	// cerr << "GL " << (type == GL_DEBUG_TYPE_ERROR ? "ERROR: " : "MESSAGE: ") << severity << " " << message << endl;
 }
 
 application::application()
@@ -38,7 +36,7 @@ application::application()
 	const GLubyte * renderer = glGetString(GL_RENDERER);
 	std::cout << "Renderer: " << renderer << std::endl;
 
-	lastStep = chrono::high_resolution_clock::now();
+	last_step = chrono::high_resolution_clock::now();
 
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
@@ -53,13 +51,13 @@ application::~application()
 
 bool application::step()
 {
-	// update camera
+	// update time
 
 	auto now = chrono::high_resolution_clock::now();
 
-	float elapsed = chrono::duration_cast<chrono::microseconds>(now - lastStep).count() / 1000.f;
+	_elapsed = chrono::duration_cast<chrono::microseconds>(now - last_step).count() / 1000.f;
 
-	lastStep = now;
+	last_step = now;
 
 	// swap buffers
 
@@ -67,7 +65,7 @@ bool application::step()
 	
 	// clear buffer
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// poll window events
 
@@ -76,4 +74,9 @@ bool application::step()
 	// finish main loop once window closes
 
 	return !glfwWindowShouldClose(window);
+}
+
+float application::elapsed()
+{
+	return _elapsed;
 }

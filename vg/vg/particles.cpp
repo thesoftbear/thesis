@@ -4,6 +4,7 @@
 #include <random>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -45,7 +46,7 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 		coordinates[1] = distribution(generator);
 		coordinates[2] = distribution(generator);
 
-		if (particle % (number / 10) == 0) cout << ".";
+		// if (particle % (number / 10) == 0) cout << ".";
 	}
 
 	_data.set(4 * number * sizeof(float), p, GL_STATIC_DRAW);
@@ -209,27 +210,46 @@ storage & particles::data()
 	return _data;
 }
 
-float particle_offset = 0.f;
-
-void particles::draw()
+void particles::draw(float time, geometry_buffer & g)
 {
+	GLuint framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g.get_position_texture(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g.get_normal_texture(), 0);
+
+	GLuint renderbuffer;
+	glGenRenderbuffers(1, &renderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) error("framebuffer incomplete");
+
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	glEnable(GL_DEPTH_TEST);
 
 	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
 
-	particle_offset += 0.0001f;
-	if (particle_offset >= 1.f) particle_offset = 0.f;
-	mat4 rotation =	toMat4(quat(vec3(0, radians(particle_offset * 360), 0)));
+	_rotation += time / 3000.f;
+	
+	mat4 rotation =	toMat4(quat(vec3(0, _rotation, 0)));
 
 	mat4 model = rotation * translation;
 
-	mat4 view = lookAt(vec3(0, 0, particle_offset + 0.5f), vec3(0, 0, 0), vec3(0, 1, 0));
+	mat4 view = lookAt(vec3(0, 0, 1.5f), vec3(0, 0, 0), vec3(0, 1, 0));
 
-	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.1f, 10.f);
+	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.01f, 10.f);
 
 	_draw.use();
 	_data.bind(0);
@@ -240,4 +260,7 @@ void particles::draw()
 	_draw.execute(GL_POINTS, 0, _number);
 
 	glDeleteVertexArrays(1, &vao);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDeleteFramebuffers(1, &framebuffer);
 }

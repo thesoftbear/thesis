@@ -1,0 +1,116 @@
+#version 430
+
+layout(local_size_x = 32) in;
+
+
+// per particle position
+
+layout(std430, binding = 0) readonly buffer particleStorage
+{
+	vec4 particle[];
+};
+
+
+// per voxel density value
+
+layout(std430, binding = 1) buffer densityStorage
+{
+	uint density[];
+};
+       
+
+uniform float voxel_size;
+
+uniform uint voxel_count;
+
+uniform float particle_size;
+
+uniform uint particle_count;
+
+uniform float particle_size_squared;
+
+uniform float voxel_inside_distance_squared;
+
+uniform float particle_inside_distance_squared;
+
+uniform float outside_distance_squared;
+
+float factor = voxel_size / 6.0;
+
+void contribute(uvec3 voxel_coordinates, vec3 particle_position)
+{
+	// get voxel position
+
+		vec3 voxel_position = vec3(voxel_coordinates) * voxel_size + vec3(voxel_size * 0.5);
+
+	// get cell index
+
+		uint voxel_index = (voxel_count * voxel_coordinates.z + voxel_coordinates.y) * voxel_count + voxel_coordinates.x;
+		
+		// voxel_index = gl_LocalInvocationIndex;
+
+		vec3 early_vector = particle_position - voxel_position;
+		float squared_distance = dot(early_vector, early_vector);
+	
+		if(squared_distance >= outside_distance_squared)
+		{
+			return;
+		}
+
+		if(squared_distance <= voxel_inside_distance_squared || squared_distance <= particle_inside_distance_squared)
+		{
+			atomicAdd(density[voxel_index], 270);
+			return;
+		}
+
+	// count sampling points inside particle
+
+		uint voxel_density = 0;
+
+		vec3 base = particle_position - voxel_position;
+
+		for(uint z = 0; z < 3; z++)
+		{
+			for(uint y = 0; y < 3; y++)
+			{
+				for(uint x = 0; x < 3; x++)
+				{
+					vec3 distance_vector = base - vec3(x, y, z) * factor;
+					if(dot(distance_vector, distance_vector) <= particle_size_squared) voxel_density += 10;
+				}
+			}
+		}
+
+		atomicAdd(density[voxel_index], voxel_density);
+} 
+
+void main()
+{
+	// get particle
+
+		uint particle_index = gl_GlobalInvocationID.x;
+
+		if(particle_index >= particle_count) return;
+
+		vec3 particle_position = particle[particle_index].xyz;
+		
+	// get intersected cells
+
+		vec3 offset = vec3(particle_size);
+
+		uvec3 min = clamp(uvec3((particle_position - offset) * voxel_count), uvec3(0), uvec3(voxel_count - 1));
+		uvec3 max = clamp(uvec3((particle_position + offset) * voxel_count), uvec3(0), uvec3(voxel_count - 1));
+
+	// for each cell contribute density
+		
+		for(uint z = min.z; z <= max.z; z++)
+		{
+			for(uint y = min.y; y <= max.y; y++)
+			{
+				for(uint x = min.x; x <= max.x; x++)
+				{
+					contribute(uvec3(x, y, z) , particle_position);
+				}
+			}
+		}
+}

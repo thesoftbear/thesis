@@ -29,6 +29,8 @@ void hashgrid::resize(unsigned int resolution)
 
 void hashgrid::insert(particles & particles)
 {
+	auto start = chrono::high_resolution_clock::now();
+
 	// allocate storage according to number of particles
 
 		if (_sorted_particles.size() != particles.data().size())
@@ -38,6 +40,9 @@ void hashgrid::insert(particles & particles)
 			_particle_info.set(particles.number() * 2 * sizeof(unsigned int), nullptr, GL_DYNAMIC_COPY);
 			_particle_info.clear();
 		}
+
+		particle_size = particles.size();
+		particle_number = particles.number();
 
 	// clear old cell info
 
@@ -67,9 +72,7 @@ void hashgrid::insert(particles & particles)
 		glGetQueryObjectui64v(timer_queries[0], GL_QUERY_RESULT, &time_0);
 		glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
 
-		float time = 0.f;
-		time += double(time_1 - time_0) / 1000000;
-		cout << "[gathering] hashing: " << double(time_1 - time_0) / 1000000 << " ms";
+	float hashing_time = float(time_1 - time_0) / 1000000;
 
 	// verify hashing
 
@@ -146,7 +149,7 @@ void hashgrid::insert(particles & particles)
 		glGetQueryObjectui64v(timer_queries[0], GL_QUERY_RESULT, &time_0);
 		glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
 
-		std::cout << " prefix: " << double(time_1 - time_0) / 1000000 << " ms";
+	float prefix_time = float(time_1 - time_0) / 1000000;
 	
 	// verify prefix sum
 		
@@ -194,8 +197,7 @@ void hashgrid::insert(particles & particles)
 		glGetQueryObjectui64v(timer_queries[0], GL_QUERY_RESULT, &time_0);
 		glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
 
-		time += double(time_1 - time_0) / 1000000;
-		cout << " sorting: " << double(time_1 - time_0) / 1000000 << " ms" << endl;
+	float sorting_time = float(time_1 - time_0) / 1000000;
 
 	// verify sorting
 
@@ -220,13 +222,10 @@ void hashgrid::insert(particles & particles)
 		cout << " error: " << sorting_error;
 		*/
 
-	}
+	auto end = chrono::high_resolution_clock::now();
 
-void hashgrid::get(unsigned int & resolution, storage * & info, storage * & particles)
-{
-	resolution = _resolution;
-	info = &_cell_info;
-	particles = &_sorted_particles;
+	cout << "hashgrid: " << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms (hashing: "
+		<< hashing_time << " ms, prefix: " << prefix_time << " ms, sorting: " << sorting_time << " ms)" << endl;
 }
 
 storage & hashgrid::get_cell_info()
@@ -242,4 +241,14 @@ storage & hashgrid::get_particle_data()
 unsigned int hashgrid::get_resolution()
 {
 	return _resolution;
+}
+
+unsigned int hashgrid::get_particle_number()
+{
+	return particle_number;
+}
+
+float hashgrid::get_particle_size()
+{
+	return particle_size;
 }

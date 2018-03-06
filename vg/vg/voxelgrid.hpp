@@ -12,9 +12,9 @@ class voxelgrid
 		~voxelgrid();
 		void save(string path);
 		void scatter(particles & particles);
+		void scatter(hashgrid & hashgrid);
 		void gather(hashgrid & hashgrid);
-		void scatter3DTexture(particles & particles);
-		void get();
+		void scatterTexture(particles & particles);
 		void mipmap();
 
 	private:
@@ -22,22 +22,10 @@ class voxelgrid
 		unsigned int _resolution;
 		unsigned int _elements;
 		storage _voxel_data;
-		shader _scatter;
+		shader _scatter_unsorted;
+		shader _scatter_sorted;
+		shader _scatter_texture;
 		shader _gather;
 		shader _mipmap;
 
-
-
-		shader _scatter3DTexture;
-
-
-
-
-
-		float scattering_time[10];
-		float scattering_sum;
-		unsigned int scattering_iteration;
-		float gathering_time[10];
-		float gathering_sum;
-		unsigned int gathering_iteration;
 };

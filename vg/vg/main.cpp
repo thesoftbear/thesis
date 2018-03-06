@@ -3,11 +3,13 @@
 #include "storage.hpp"
 #include "voxelgrid.hpp"
 #include "hashgrid.hpp"
+#include "geometry_buffer.hpp"
+#include "ambientocclusion.hpp"
 
 #include <iostream>
 
 const unsigned int voxels = 256;
-const unsigned int cells = voxels / 8;
+const unsigned int cells = voxels / 2;
 const float particle_radius = 0.003f;
 const unsigned int particle_count = 20000000;
 
@@ -27,21 +29,32 @@ int main()
 
 	hashgrid h(cells);
 
-	h.insert(p);
+	//v.scatterTexture(p);
+	//v.scatterTexture(p);
+	//v.scatterTexture(p);
 
 	while (a.step())
 	{
-		for(unsigned int i = 0; i < 10; i++) v.scatter(p);
+		geometry_buffer gbuffer(1280, 720);
 
-		for (unsigned int i = 0; i < 10; i++) v.gather(h);
+		//v.scatter(p);
+		
+		h.resize(voxels / 32);
+		h.insert(p);
+		v.scatter(h);
+		
+		//h.resize(voxels / 2);
+		//h.insert(p);
+		//v.gather(h);
+		
 
 		// v.mipmap();
 
-		// v.save("scatter2.raw");
+		p.draw(a.elapsed(), gbuffer);
 
-		// p.draw();
+		ambientocclusion ao;
 
-		v.scatter3DTexture(p);
+		ao.cast_rays(gbuffer, h);
 	}
 
 	return 0;

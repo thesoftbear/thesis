@@ -2,6 +2,7 @@
 
 #include "storage.hpp"
 #include "shader.hpp"
+#include "geometry_buffer.hpp"
 
 #include <string>
 #include <vector>
@@ -22,7 +23,7 @@ class particles
 		unsigned int number();
 		float size();
 		storage & data();
-		void draw();
+		void draw(float time, geometry_buffer & b);
 
 	private:
 
@@ -36,4 +37,6 @@ class particles
 		vector<float> _coordinates;
 
 		shader _draw;
+
+		float _rotation;
 };

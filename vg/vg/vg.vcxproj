@@ -148,9 +148,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\external\glad\src\glad.c" />
+    <ClCompile Include="ambientocclusion.cpp" />
     <ClCompile Include="application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="error.cpp" />
+    <ClCompile Include="geometry_buffer.cpp" />
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="hashgrid.cpp" />
     <ClCompile Include="main.cpp" />
@@ -159,9 +161,11 @@
     <ClCompile Include="storage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ambientocclusion.hpp" />
     <ClInclude Include="application.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="error.hpp" />
+    <ClInclude Include="geometry_buffer.hpp" />
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="hashgrid.hpp" />
     <ClInclude Include="particles.hpp" />
@@ -169,16 +173,20 @@
     <ClInclude Include="storage.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cone_tracing.glcs" />
     <None Include="draw_particles.glfs" />
     <None Include="draw_particles.glvs" />
+    <None Include="fullscreen_quad.glvs" />
     <None Include="gathering2.glcs" />
     <None Include="gathering3.glcs" />
     <None Include="mipmap.glcs" />
-    <None Include="scattering.glcs" />
-    <None Include="scattering2.glcs" />
-    <None Include="scattering3DTexture.glfs" />
-    <None Include="scattering3DTexture.glgs" />
-    <None Include="scattering3DTexture.glvs" />
+    <None Include="ray_casting.glfs" />
+    <None Include="scattering_sorted2.glcs" />
+    <None Include="scattering_unsorted.glcs" />
+    <None Include="scattering_sorted.glcs" />
+    <None Include="scattering_texture.glfs" />
+    <None Include="scattering_texture.glgs" />
+    <None Include="scattering_texture.glvs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -10,10 +10,11 @@ class hashgrid
 		hashgrid(unsigned int resolution);
 		void resize(unsigned int resolution);
 		void insert(particles & particles);
-		void get(unsigned int & resolution, storage * & info, storage * & particles);
 		storage & get_cell_info();
 		storage & get_particle_data();
 		unsigned int get_resolution();
+		float get_particle_size();
+		unsigned int get_particle_number();
 
 	private:
 
@@ -22,7 +23,8 @@ class hashgrid
 		storage _particle_info;
 		storage _sorted_particles;
 		storage _prefix_data;
-
+		float particle_size;
+		unsigned int particle_number;
 		shader _hashing;
 		shader _prefixsum;
 		shader _sorting;

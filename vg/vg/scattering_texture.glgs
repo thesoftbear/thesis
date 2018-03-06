@@ -1,0 +1,72 @@
+#version 430
+#extension GL_EXT_geometry_shader4 : enable
+
+layout (points) in;
+layout (points, max_vertices = 64) out;
+
+vec3 voxel_resolution = vec3(256);
+uniform float particle_radius;
+
+flat out vec3 sphere_center;
+flat out float sphere_radius_squared;
+flat out float cell_z;
+
+void emit_disk(int layer, float disk_size)
+{
+	gl_Layer = layer;
+	cell_z = layer;
+	gl_PointSize = 2.0 * ceil(disk_size * max(voxel_resolution.x, voxel_resolution.y));
+	gl_Position = vec4(gl_PositionIn[0].xyz * 2.0 - 1.0, 1.0);
+	sphere_center = gl_PositionIn[0].xyz;
+	sphere_radius_squared = particle_radius * particle_radius;
+
+	EmitVertex();
+	EndPrimitive();
+}
+
+void emit_hemisphere(int layer, int slices, float offset, int step)
+{
+	float squared_particle_radius = particle_radius * particle_radius;
+
+	for (int i = 1; i <= slices; i++)
+	{
+		float distance = i / voxel_resolution.z + offset;
+		
+		float slice_radius_squared = squared_particle_radius - distance * distance;
+
+		if (slice_radius_squared < 0.0) break;
+		
+		emit_disk(layer + step * i, sqrt(slice_radius_squared));
+	} 
+}
+
+
+
+void main()
+{	
+	// calculate the number of slices needed for per hemisphere
+		
+		int slices = int(ceil(particle_radius * voxel_resolution.z));
+
+		gl_Position = vec4(gl_PositionIn[0].xyz * 2.0 - 1.0, 1.0);
+
+	// center layer
+		
+		int central_layer = int(floor(gl_PositionIn[0].z * voxel_resolution.z));
+		
+		emit_disk(central_layer, particle_radius);
+	
+	// Calculate the offset in Z direction from the center of the center layer
+		
+		float slice_thickness = 1.0 / voxel_resolution.z; 
+		
+		float z_offset = fract(gl_PositionIn[0].z * voxel_resolution.z) / voxel_resolution.z;
+
+	// Emit a hemisphere in negative direction
+		
+		emit_hemisphere(central_layer, slices, z_offset, -1);
+	
+	// Emit a hemisphere in positive direction
+		
+		emit_hemisphere(central_layer, slices, slice_thickness - z_offset, +1);
+}

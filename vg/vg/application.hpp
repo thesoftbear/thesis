@@ -15,10 +15,11 @@ class application
 		~application();
 
 		bool step();
-	
+		float elapsed();
 
 	private:
 
 		GLFWwindow * window;
-		chrono::high_resolution_clock::time_point lastStep;
+		chrono::high_resolution_clock::time_point last_step;
+		float _elapsed;
 };
