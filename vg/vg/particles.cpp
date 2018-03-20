@@ -8,16 +8,12 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include "gtc\matrix_transform.hpp"
-#include "gtx\quaternion.hpp"
-#include "glm.hpp"
+#include "gtc\noise.hpp"
 
 particles::particles()
 {
 	_number = 0;
 	_size = 0.f;
-
-	_draw.source("../vg/draw_particles.glvs", "../vg/draw_particles.glfs");
 }
 
 particles::~particles()
@@ -28,7 +24,6 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 {
 	_frames = frames;
 	_current = 0;
-	_number = number;
 	_size = size;
 
 	float * p = new float[4 * number];
@@ -38,15 +33,27 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 
 	cout << "Generating particles ";
 
-	for (unsigned int particle = 0; particle < number; particle++)
+	_number = 0;
+
+	while (_number < number)
 	{
-		float * coordinates = p + 4 * particle;
+		float x = distribution(generator);
+		float y = distribution(generator);
+		float z = distribution(generator);
 
-		coordinates[0] = distribution(generator);
-		coordinates[1] = distribution(generator);
-		coordinates[2] = distribution(generator);
+		float chance = glm::simplex(glm::vec3(x * 10, y * 10, z * 10));
+		float draw = distribution(generator);
 
-		// if (particle % (number / 10) == 0) cout << ".";
+		if (draw <= chance)
+		{
+			float * coordinates = p + 4 * _number;
+
+			coordinates[0] = x;
+			coordinates[1] = y;
+			coordinates[2] = z;
+
+			_number++;
+		}
 	}
 
 	_data.set(4 * number * sizeof(float), p, GL_STATIC_DRAW);
@@ -74,11 +81,21 @@ void particles::read(string path)
 	file_header header;
 	file.read((char *)&header, sizeof(file_header));
 
+	cout << "version: " << header.version << endl;
+
 	unsigned long long * offsets = new unsigned long long[header.frames];
 	file.read((char *)offsets, sizeof(unsigned long long) * header.frames);
 
 	unsigned long long size;
 	file.read((char *)&size, sizeof(unsigned long long));
+
+	cout << "size: " << size << endl;
+
+	_frames = header.frames;
+
+	cout << "frames: " << header.frames << endl;
+
+	cout << "bounding_box: " << header.bounding_box[0] << " " << header.bounding_box[1] << " " << header.bounding_box[2] << " " << header.bounding_box[3] << " " << header.bounding_box[4] << " " << header.bounding_box[5] << endl;
 
 	_offset.clear();
 	_offset.reserve(header.frames);
@@ -90,28 +107,36 @@ void particles::read(string path)
 	float z_range = header.bounding_box[5] - header.bounding_box[2];
 	float max_range = (x_range > y_range) ? ((z_range > x_range) ? z_range : x_range) : ((z_range > y_range) ? z_range : y_range);
 
-	for (unsigned int frame = 0; frame < header.frames && frame < 1; frame++)
-	{	
-		std::cout << "frame " << frame << " / " << header.frames << std::endl;
+	const unsigned int target_frame = 120;
+
+	for (unsigned int frame = target_frame; frame < header.frames && frame <= target_frame; frame++)
+	{
+		std::cout << "frame " << frame << " / " << header.frames << " (" << file.tellg() << ")" << std::endl;
+
+		file.seekg(offsets[frame]);
 
 		if (header.version >= 102)
 		{
 			float timestamp;
 			file.read((char *)&timestamp, sizeof(float));
+
+			cout << "t:" << timestamp;
 		}
 
 		unsigned int lists;
 		file.read((char *)&lists, sizeof(unsigned int));
 
-		_coordinates.clear();
+		cout << "l: " << lists << endl;
 
 		for (unsigned int list = 0; list < lists; list++)
 		{
 			unsigned char vertex_type;
-			file.read((char *)&vertex_type, sizeof(unsigned char));
-
 			unsigned char color_type;
+
+			file.read((char *)&vertex_type, sizeof(unsigned char));
 			file.read((char *)&color_type, sizeof(unsigned char));
+
+			cout << "v: " << int(vertex_type) << " c: " << int(color_type) << endl;
 
 			float radius = 1.f;
 
@@ -121,12 +146,20 @@ void particles::read(string path)
 				_size = radius / max_range;
 			}
 
+			if (vertex_type == 2)
+			{
+				_size = 0.001;
+			}
+
+			cout << "r: " << radius << " (" << _size << ")" << endl;
+
+			unsigned char global_color[4];
 			float minimum_intensity = 0;
 			float maximum_intensity = 0;
 
 			if (color_type == 0)
 			{
-				// read global color
+				file.read((char *)global_color, sizeof(unsigned char) * 4);
 			}
 			else if (color_type == 3)
 			{
@@ -138,30 +171,49 @@ void particles::read(string path)
 			file.read((char *)&count, sizeof(unsigned long long));
 			std::cout << "count = " << count << std::endl;
 
-			float * data = new float[count * 4];
-			file.read((char *)data, sizeof(float) * 4 * count);
+			unsigned int vertex_size;
+			unsigned int color_size;
 
-			(frame > 0) ? _offset.push_back(_offset[frame - 1]) : _offset.push_back(0);
-			_coordinates.reserve(_coordinates.size() + count * 4);
-			_number = count;
+			if (vertex_type == 0) vertex_size = 0;
+			if (vertex_type == 1) vertex_size = 12;
+			if (vertex_type == 2) vertex_size = 16;
+			if (vertex_type == 3) vertex_size = 6;
 
-			float min = 1;
-			float max = 0;
+			if (color_type == 0) color_size = 0;
+			if (color_type == 1) color_size = 3;
+			if (color_type == 2) color_size = 4;
+			if (color_type == 3) color_size = 4;
 
-			if (frame == 0)
+			unsigned char * data = new unsigned char[count * (vertex_size + color_size)];
+			file.read((char *)data, count * (vertex_size + color_size));
+
+			const unsigned  int factor = 1;
+
+			if (frame == target_frame)
 			{
-				for (unsigned int p = 0; p < count; p++)
-				{
-					float * x = data + p * 4;
-					float * y = x + 1;
-					float * z = y + 1;
+				_coordinates.reserve(_coordinates.size() + factor * count * 4);
+				_number = count * factor;
 
-					_coordinates.push_back((*x - header.bounding_box[0]) / max_range);
-					_coordinates.push_back((*y - header.bounding_box[1]) / max_range);
-					_coordinates.push_back((*z - header.bounding_box[2]) / max_range);
-					_coordinates.push_back(0);
+				for (unsigned int i = 0; i < factor; i++)
+				{
+					for (unsigned int p = 0; p < count; p++)
+					{
+						if (vertex_type == 1 || vertex_type == 2)
+						{
+							float * x = (float *)(data + p * (vertex_size + color_size));
+							float * y = x + 1;
+							float * z = y + 1;
+
+							_coordinates.push_back((*x - header.bounding_box[0]) / max_range);
+							_coordinates.push_back((*y - header.bounding_box[1]) / max_range);
+							_coordinates.push_back((*z - header.bounding_box[2]) / max_range);
+							_coordinates.push_back(0);
+
+						}
+					}
 				}
 			}
+
 			delete[] data;
 		}
 	}
@@ -195,7 +247,7 @@ void particles::select(unsigned int frame)
 	{
 		_current = frame;
 
-		float * start = _coordinates.data() + _offset[frame] * 4 * sizeof(float);
+		float * start = _coordinates.data();
 
 		_data.set(_number * 4 * sizeof(float), start);
 	}
@@ -208,59 +260,4 @@ void particles::select(unsigned int frame)
 storage & particles::data()
 {
 	return _data;
-}
-
-void particles::draw(float time, geometry_buffer & g)
-{
-	GLuint framebuffer;
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g.get_position_texture(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g.get_normal_texture(), 0);
-
-	GLuint renderbuffer;
-	glGenRenderbuffers(1, &renderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
-
-	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-	glDrawBuffers(2, attachments);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE) error("framebuffer incomplete");
-
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-	glEnable(GL_DEPTH_TEST);
-
-	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
-
-	_rotation += time / 3000.f;
-	
-	mat4 rotation =	toMat4(quat(vec3(0, _rotation, 0)));
-
-	mat4 model = rotation * translation;
-
-	mat4 view = lookAt(vec3(0, 0, 1.5f), vec3(0, 0, 0), vec3(0, 1, 0));
-
-	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.01f, 10.f);
-
-	_draw.use();
-	_data.bind(0);
-	_draw.set("modelMatrix", model);
-	_draw.set("viewMatrix", view);
-	_draw.set("projectionMatrix", projection);
-	_draw.set("particleSize", _size);
-	_draw.execute(GL_POINTS, 0, _number);
-
-	glDeleteVertexArrays(1, &vao);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDeleteFramebuffers(1, &framebuffer);
 }

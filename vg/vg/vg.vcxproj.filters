@@ -12,7 +12,6 @@
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ambientocclusion.cpp" />
-    <ClCompile Include="geometry_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.hpp" />
@@ -24,7 +23,6 @@
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="ambientocclusion.hpp" />
-    <ClInclude Include="geometry_buffer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="mipmap.glcs" />

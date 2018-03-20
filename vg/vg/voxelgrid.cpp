@@ -15,7 +15,7 @@ voxelgrid::voxelgrid(unsigned int resolution)
 
 	_voxel_data.set(sizeof(float) * _elements);
 	_scatter_unsorted.source("../vg/scattering_unsorted.glcs");
-	_scatter_sorted.source("../vg/scattering_sorted.glcs");
+	_scatter_sorted.source("../vg/scattering_sorted2.glcs");
 	_gather.source("../vg/gathering.glcs");
 	_mipmap.source("../vg/mipmap.glcs");
 
@@ -98,7 +98,7 @@ void voxelgrid::scatter(hashgrid & hashgrid)
 	auto start = chrono::high_resolution_clock::now();
 
 	_scatter_sorted.use();
-	
+	/*
 	hashgrid.get_cell_info().bind(2);
 	hashgrid.get_particle_data().bind(6);
 	_voxel_data.bind(7);
@@ -125,8 +125,8 @@ void voxelgrid::scatter(hashgrid & hashgrid)
 	glQueryCounter(timer_queries[0], GL_TIMESTAMP);
 
 	_scatter_sorted.execute(groups, groups, groups);
-	
-	/*
+	*/
+
 	hashgrid.get_particle_data().bind(0);
 	_voxel_data.bind(1);
 
@@ -137,6 +137,7 @@ void voxelgrid::scatter(hashgrid & hashgrid)
 	_scatter_sorted.set("voxel_count", _resolution);
 	float particle_size = hashgrid.get_particle_size();
 	unsigned int particle_count = hashgrid.get_particle_number();
+	std::cout << "parts: " << particle_count << std::endl;
 	_scatter_sorted.set("particle_count", particle_count);
 	_scatter_sorted.set("particle_size", particle_size);
 	float voxel_inside_distance = particle_size - voxel_radius;
@@ -154,9 +155,8 @@ void voxelgrid::scatter(hashgrid & hashgrid)
 	glQueryCounter(timer_queries[0], GL_TIMESTAMP);
 
 	_scatter_sorted.execute(groups, 1, 1);
-	*/
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 	GLuint64 time_0, time_1;
 	glQueryCounter(timer_queries[1], GL_TIMESTAMP);
@@ -218,6 +218,77 @@ void voxelgrid::scatterTexture(particles & p)
 	auto end = chrono::high_resolution_clock::now();
 
 	cerr << "scattering texture: " << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms (" << (time_1 - time_0) / 1000000 << ")" << endl;
+
+	// save 3D Texture to file
+
+	/*
+	float * buffer = new float[_resolution * _resolution * _resolution];
+	glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, buffer);
+
+	ofstream file("scatter_rasterizer.raw", ios::binary);
+	file.write((char *)buffer, sizeof(float) * _resolution * _resolution * _resolution);
+	file.close();
+
+	delete[] buffer;
+	*/
+	glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
+	glDisable(GL_BLEND);
+
+	glDeleteVertexArrays(1, &vao);
+	glDeleteTextures(1, &texture);
+	glDeleteFramebuffers(1, &framebuffer);
+}
+
+void voxelgrid::scatterTexture(hashgrid & hashgrid)
+{
+	GLint last_framebuffer;
+
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_framebuffer);
+
+	GLuint vao;
+	GLuint texture;
+	GLuint framebuffer;
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_3D, texture);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, _resolution, _resolution, _resolution, 0, GL_RED, GL_FLOAT, NULL);
+
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	auto start = chrono::high_resolution_clock::now();
+
+	glViewport(0, 0, _resolution, _resolution);
+
+	_scatter_texture.use();
+
+	_scatter_texture.set("particle_radius", hashgrid.get_particle_size());
+
+	GLuint timer_queries[2];
+	glGenQueries(2, timer_queries);
+	glQueryCounter(timer_queries[0], GL_TIMESTAMP);
+
+	// Splat all points into the volume
+	hashgrid.get_particle_data().bind(0);
+	_scatter_texture.execute(GL_POINTS, 0, hashgrid.get_particle_number());
+
+	glQueryCounter(timer_queries[1], GL_TIMESTAMP);
+	GLuint64 time_0, time_1;
+	glGetQueryObjectui64v(timer_queries[0], GL_QUERY_RESULT, &time_0);
+	glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
+
+	auto end = chrono::high_resolution_clock::now();
+
+	cerr << "scattering texture (sorted): " << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms (" << (time_1 - time_0) / 1000000 << ")" << endl;
 
 	// save 3D Texture to file
 

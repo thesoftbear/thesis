@@ -5,6 +5,8 @@ out vec4 fragment_color;
 layout(binding = 0) uniform sampler2D position_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 
+uniform mat4 rotation;
+
 struct ray
 {
 	vec3 origin;
@@ -29,31 +31,32 @@ float intersect(ray r, sphere s)
 
 void main()
 {
-	vec3 fragment_position = texture(position_texture, gl_FragCoord.xy / vec2(1280, 720)).xyz;
-    vec3 fragment_normal = texture(normal_texture, gl_FragCoord.xy / vec2(1280, 720)).xyz;
+	vec4 fragment_position = texture(position_texture, gl_FragCoord.xy / vec2(1280, 720));
+    vec4 fragment_normal = texture(normal_texture, gl_FragCoord.xy / vec2(1280, 720));
 
-	if(fragment_position == vec3(0)) discard;
+	if(fragment_position == vec4(0)) discard;
 
-	ray r = ray(fragment_position, fragment_normal);
+	ray r = ray(fragment_position.xyz, (rotation * fragment_normal).xyz);
+
+	// dda parameter
+	vec3 step;
 
 	float intersection = 0;
-	uint step = 0;
+	bool brk = false;
 
-	/*
-	while(intersection == 0 && step < 10)
+	while(intersection == 0 && !brk)
 	{
-		// get next hash cell
+		// round to hashgrid cell
 
+		// loop through particles until intersection
+		
+		// move to next hashgrid cell
 
-
-		// intersect all spheres
-
-
-
-		step++;
+		brk = true;
 	}
-	*/
 
-	float diffuse = clamp(dot(normalize(fragment_normal), normalize(vec3(-10, 10, 10))), 0.0, 1.0);
-	fragment_color = diffuse * vec4(0.1, 0.1, 0.6, 0) + vec4(0.1, 0.1, 0.4, 1);
+	float diffuse = clamp(dot(normalize(fragment_normal.xyz), normalize(vec3(-10, 10, 10))), 0.0, 1.0);
+	
+	// fragment_color = diffuse * vec4(0.1, 0.1, 0.6, 0) + vec4(0.1, 0.1, 0.4, 1);
+	fragment_color = vec4(r.direction, 1);
 }

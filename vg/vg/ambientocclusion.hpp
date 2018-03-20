@@ -2,7 +2,6 @@
 
 #include "voxelgrid.hpp"
 #include "hashgrid.hpp"
-#include "geometry_buffer.hpp"
 
 #include <random>
 
@@ -11,10 +10,21 @@ class ambientocclusion
 	public:
 
 		ambientocclusion();
-		void trace_cones(geometry_buffer & g, voxelgrid & v);
-		void cast_rays(geometry_buffer & g, hashgrid & h);
+		~ambientocclusion();
+		void draw_geometry(float time, particles & p); 
+		void draw_geometry(float time, hashgrid & h);
+		void trace_cones(voxelgrid & v);
+		void cast_rays(hashgrid & h);
 
 	private:
 
+		shader draw_geometry_shader;
+		shader trace_cones_shader;
 		shader ray_casting;
+
+		default_random_engine generator;
+
+		GLuint position_texture;
+		GLuint normal_texture;
+		float model_rotation;
 };

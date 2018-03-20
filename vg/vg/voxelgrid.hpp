@@ -15,6 +15,7 @@ class voxelgrid
 		void scatter(hashgrid & hashgrid);
 		void gather(hashgrid & hashgrid);
 		void scatterTexture(particles & particles);
+		void scatterTexture(hashgrid & hashgrid);
 		void mipmap();
 
 	private:

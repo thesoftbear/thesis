@@ -152,7 +152,6 @@
     <ClCompile Include="application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="error.cpp" />
-    <ClCompile Include="geometry_buffer.cpp" />
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="hashgrid.cpp" />
     <ClCompile Include="main.cpp" />
@@ -165,7 +164,6 @@
     <ClInclude Include="application.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="error.hpp" />
-    <ClInclude Include="geometry_buffer.hpp" />
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="hashgrid.hpp" />
     <ClInclude Include="particles.hpp" />

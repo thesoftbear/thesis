@@ -3,7 +3,6 @@
 #include "storage.hpp"
 #include "voxelgrid.hpp"
 #include "hashgrid.hpp"
-#include "geometry_buffer.hpp"
 #include "ambientocclusion.hpp"
 
 #include <iostream>
@@ -11,7 +10,7 @@
 const unsigned int voxels = 256;
 const unsigned int cells = voxels / 2;
 const float particle_radius = 0.003f;
-const unsigned int particle_count = 20000000;
+const unsigned int particle_count = 10000000;
 
 int main()
 {
@@ -21,40 +20,35 @@ int main()
 	p.generate(1, particle_count, particle_radius);
 	//p.read("E:/laser.mmpld");
 	//p.read("E:/oc_sim42_corrected.mmpld");
-	//p.select(0);
-
-	std::cout << "particle size = " << p.size() << endl;
+	// p.read("E:/exp2mill.mmpld");
+	// p.select(0);
 
 	voxelgrid v(voxels);
 
 	hashgrid h(cells);
-
-	//v.scatterTexture(p);
-	//v.scatterTexture(p);
-	//v.scatterTexture(p);
+	
+	ambientocclusion ao;
 
 	while (a.step())
-	{
-		geometry_buffer gbuffer(1280, 720);
-
-		//v.scatter(p);
-		
-		h.resize(voxels / 32);
+	{	
+		h.resize(128);
 		h.insert(p);
 		v.scatter(h);
-		
-		//h.resize(voxels / 2);
-		//h.insert(p);
-		//v.gather(h);
-		
 
+		/*
+		for(unsigned int i = 0; i < 10; i++) v.scatter(p);
+		for (unsigned int i = 0; i < 10; i++) v.scatter(h);
+
+		h.resize(voxels / 2);
+		for (unsigned int i = 0; i < 10; i++) h.insert(p);
+		for (unsigned int i = 0; i < 10; i++) v.gather(h);
+		 
+		for (unsigned int i = 0; i < 10; i++) v.scatterTexture(p);
+		*/
 		// v.mipmap();
 
-		p.draw(a.elapsed(), gbuffer);
-
-		ambientocclusion ao;
-
-		ao.cast_rays(gbuffer, h);
+		ao.draw_geometry(a.elapsed(), p);
+		ao.cast_rays(h);
 	}
 
 	return 0;
