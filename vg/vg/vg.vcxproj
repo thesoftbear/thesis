@@ -150,7 +150,6 @@
     <ClCompile Include="..\external\glad\src\glad.c" />
     <ClCompile Include="ambientocclusion.cpp" />
     <ClCompile Include="application.cpp" />
-    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="error.cpp" />
     <ClCompile Include="voxelgrid.cpp" />
     <ClCompile Include="hashgrid.cpp" />
@@ -162,7 +161,6 @@
   <ItemGroup>
     <ClInclude Include="ambientocclusion.hpp" />
     <ClInclude Include="application.hpp" />
-    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="error.hpp" />
     <ClInclude Include="voxelgrid.hpp" />
     <ClInclude Include="hashgrid.hpp" />
@@ -171,7 +169,7 @@
     <ClInclude Include="storage.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cone_tracing.glcs" />
+    <None Include="cone_tracing.glfs" />
     <None Include="draw_occlusion.glfs" />
     <None Include="draw_particles.glfs" />
     <None Include="draw_particles.glvs" />

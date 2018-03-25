@@ -17,6 +17,7 @@ class voxelgrid
 		void scatterTexture(particles & particles);
 		void scatterTexture(hashgrid & hashgrid);
 		void mipmap();
+		unsigned int get_resolution();
 
 	private:
 

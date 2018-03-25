@@ -30,8 +30,7 @@ class ambientocclusion
 		GLuint normal_texture;
 		GLuint occlusion_texture;
 		
-		unsigned int ray_samples;
-		float model_rotation;
+		unsigned int samples;
 
 		GLuint framebuffer;
 		GLuint renderbuffer;

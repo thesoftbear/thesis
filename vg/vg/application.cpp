@@ -36,7 +36,7 @@ application::application()
 	const GLubyte * renderer = glGetString(GL_RENDERER);
 	std::cout << "Renderer: " << renderer << std::endl;
 
-	last_step = chrono::high_resolution_clock::now();
+	start_time = chrono::high_resolution_clock::now();
 
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
@@ -55,9 +55,7 @@ bool application::step()
 
 	auto now = chrono::high_resolution_clock::now();
 
-	_elapsed = chrono::duration_cast<chrono::microseconds>(now - last_step).count() / 1000.f;
-
-	last_step = now;
+	_elapsed = chrono::duration_cast<chrono::microseconds>(now - start_time).count() / 1000.f;
 
 	swap();
 
@@ -77,6 +75,8 @@ void application::swap()
 	glfwSwapBuffers(window);
 
 	// clear buffer
+
+	glClearColor(0, 0, 0, 0);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }

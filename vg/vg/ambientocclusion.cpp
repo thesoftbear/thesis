@@ -14,6 +14,7 @@ ambientocclusion::ambientocclusion()
 {
 	draw_geometry_shader.source("../vg/draw_particles.glvs", "../vg/draw_particles.glfs");
 	ray_casting.source("../vg/fullscreen_quad.glvs", "../vg/ray_casting.glfs");
+	trace_cones_shader.source("../vg/fullscreen_quad.glvs", "../vg/cone_tracing.glfs");
 	draw_occlusion_shader.source("../vg/fullscreen_quad.glvs", "../vg/draw_occlusion.glfs");
 
 	unsigned int width = 1280;
@@ -41,7 +42,7 @@ ambientocclusion::ambientocclusion()
 	glGenRenderbuffers(1, &renderbuffer);
 	glGenVertexArrays(1, &vao);
 
-	ray_samples = 0;
+	samples = 0;
 }
 
 ambientocclusion::~ambientocclusion()
@@ -81,7 +82,7 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
 	mat4 inverseTranslation = translate(mat4(1.f), vec3(0.5f, 0.5f, 0.5f));
 
-	model_rotation += time / 10000.f;
+	float model_rotation = time / 10000.f;
 
 	mat4 rotation = toMat4(quat(vec3(0, model_rotation, 0)));
 	mat4 inverseRotation = transpose(rotation);
@@ -89,7 +90,7 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	mat4 model = rotation * translation;
 	mat4 inverseModel = inverseTranslation * inverseRotation;
 
-	mat4 view = lookAt(vec3(0, 0, 1.5f), vec3(0, 0, 0), vec3(0, 1, 0));
+	mat4 view = lookAt(vec3(0, 0, 1.25f), vec3(0, 0, 0), vec3(0, 1, 0));
 
 	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.01f, 10.f);
 
@@ -104,7 +105,7 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	ray_samples = 0;
+	samples = 0;
 }
 
 void ambientocclusion::draw_geometry(float time, hashgrid & h)
@@ -114,7 +115,45 @@ void ambientocclusion::draw_geometry(float time, hashgrid & h)
 
 void ambientocclusion::trace_cones(voxelgrid & v)
 {
+	glBindVertexArray(vao);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, position_texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, normal_texture);
+
+	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+
+	trace_cones_shader.use();
+
+	trace_cones_shader.set("opening_angle", radians(90.f));
+	trace_cones_shader.set("voxel_count", v.get_resolution());
+	trace_cones_shader.set("voxel_size", 1.f / v.get_resolution());
+
+	// voxelgrid level offsets
+
+	unsigned int levels = log(float(v.get_resolution())) / log(2.f) + 1;
+	unsigned int * offsets = new unsigned int[levels];
+
+	trace_cones_shader.set("voxel_levels", levels);
+
+	unsigned int level_counter = 0;
+	unsigned int level_offset = 0;
+	for (unsigned int resolution = v.get_resolution(); resolution >= 1; resolution /= 2)
+	{
+		offsets[level_counter] = level_offset;
+		level_offset += resolution * resolution * resolution;
+		level_counter += 1;
+	}
+
+	trace_cones_shader.set("level_offsets", levels, offsets);
+	delete[] offsets;
+
+	trace_cones_shader.set("occlusion_texture", 0);
+
+	trace_cones_shader.execute(GL_TRIANGLE_STRIP, 0, 4);
+
+	samples += 1;
 }
 
 void ambientocclusion::cast_rays(hashgrid & h)
@@ -138,19 +177,17 @@ void ambientocclusion::cast_rays(hashgrid & h)
 	h.get_cell_info().bind(2);
 	h.get_particle_data().bind(3);
 
-	std::cout << "sample:" << ray_samples << std::endl;
-
 	ray_casting.set("pitch", pitch);
 	ray_casting.set("roll", roll);
 	ray_casting.set("cell_count", h.get_resolution());
 	ray_casting.set("cell_size", 1.f / h.get_resolution());
 	ray_casting.set("particle_size", h.get_particle_size());
-	ray_casting.set("ray_samples", ray_samples);
+	ray_casting.set("ray_samples", samples);
 	ray_casting.set("occlusion_texture", 0);
 
 	ray_casting.execute(GL_TRIANGLE_STRIP, 0, 4);
 
-	ray_samples += 1;
+	samples += 1;
 }
 
 void ambientocclusion::draw_occlusion()
@@ -163,8 +200,8 @@ void ambientocclusion::draw_occlusion()
 	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
 	draw_occlusion_shader.use();
-	ray_casting.set("occlusion_texture", 0);
-	ray_casting.set("ray_samples", ray_samples);
+	draw_occlusion_shader.set("occlusion_texture", 0);
+	draw_occlusion_shader.set("samples", samples);
 
-	ray_casting.execute(GL_TRIANGLE_STRIP, 0, 4);
+	draw_occlusion_shader.execute(GL_TRIANGLE_STRIP, 0, 4);
 }

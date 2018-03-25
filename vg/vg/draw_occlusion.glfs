@@ -3,9 +3,19 @@
 out vec4 fragment_color;
 
 layout(binding = 0) uniform sampler2D position_texture;
-
 layout(r32f) uniform image2D occlusion_texture;
+
+uniform uint samples;
 
 void main()
 {
+	vec3 fragment_position = texture(position_texture, gl_FragCoord.xy / vec2(1280, 720)).xyz;
+
+	if(fragment_position == vec3(0)) discard;
+
+	float brightness = imageLoad(occlusion_texture, ivec2(gl_FragCoord.xy)).x; 
+
+	float color = brightness / float(samples);
+
+	fragment_color = vec4(pow(color, 1.0) * vec2(1, 1), pow(color, 1.0), 1.0);
 }

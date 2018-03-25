@@ -23,6 +23,7 @@ class shader
 		void set(string name, unsigned int value);
 		void set(string name, int value);
 		void set(string name, mat4 value);
+		void set(string name, unsigned int count, unsigned int * values);
 		void execute(unsigned int x, unsigned int y = 1, unsigned int z = 1);
 
 	private:

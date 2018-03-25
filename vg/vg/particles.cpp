@@ -41,7 +41,14 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 		float y = distribution(generator);
 		float z = distribution(generator);
 
+		// sphere teste
+		float xs = x - 0.5f;
+		float ys = y - 0.5f;
+		float zs = z - 0.5f;
+		if (sqrt(xs * xs + ys * ys + zs * zs) > 0.5f) continue;
+
 		float chance = glm::simplex(glm::vec3(x * 10, y * 10, z * 10));
+
 		float draw = distribution(generator);
 
 		if (draw <= chance)

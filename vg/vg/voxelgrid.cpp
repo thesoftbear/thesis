@@ -394,3 +394,8 @@ void voxelgrid::mipmap()
 
 	cout << " mipmap: " << double(end - start) / 1000000 << " ms" << endl;
 }
+
+unsigned int voxelgrid::get_resolution()
+{
+	return _resolution;
+}

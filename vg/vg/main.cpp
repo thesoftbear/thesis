@@ -10,7 +10,7 @@
 const unsigned int voxels = 256;
 const unsigned int cells = voxels / 2;
 const float particle_radius = 0.01f;
-const unsigned int particle_count = 10000;
+const unsigned int particle_count = 25000;
 
 int main()
 {
@@ -23,31 +23,43 @@ int main()
 	// p.read("E:/exp2mill.mmpld");
 	// p.select(0);
 
-	voxelgrid v(voxels);
-
-	hashgrid h(cells);
-	
-	ambientocclusion ao;
-
-	h.resize(voxels / 8);
+	hashgrid h(voxels / 8);
 	h.insert(p);
 
-	while (a.step())
-	{	
-		/*for(unsigned int i = 0; i < 10; i++) v.scatter(p);
-		for (unsigned int i = 0; i < 10; i++) v.scatter(h);
-		*/
-		// h.resize(voxels / 2);
-		// for (unsigned int i = 0; i < 10; i++) h.insert(p);
-		// for (unsigned int i = 0; i < 10; i++) v.gather(h);
-		 
-		// for (unsigned int i = 0; i < 10; i++) v.scatterTexture(p);
-		// for (unsigned int i = 0; i < 10; i++) v.scatterTexture(h);
-		// v.mipmap();
+	voxelgrid v(voxels);
+	v.scatter(p);
+	v.mipmap();
 
-		ao.draw_geometry(a.elapsed(), p);
+	ambientocclusion ao;
 
-		for(unsigned int i = 0; i < 10; i++) ao.cast_rays(h);
+	while (true)
+	{
+		float start = a.elapsed();
+		while (a.elapsed() - start < 10000.f)
+		{
+			ao.draw_geometry(a.elapsed(), p);
+
+			for (unsigned int i = 0; i < 100; i++)
+			{
+				ao.cast_rays(h);
+			}
+
+			ao.draw_occlusion();
+
+			a.step();
+		}
+
+		start = a.elapsed();
+		while (a.elapsed() - start < 10000.f)
+		{
+			ao.draw_geometry(a.elapsed(), p);
+
+			ao.trace_cones(v);
+
+			ao.draw_occlusion();
+
+			a.step();
+		}
 	}
 
 	return 0;

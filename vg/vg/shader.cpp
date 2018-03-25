@@ -92,6 +92,13 @@ void shader::set(string name, int value)
 	else glUniform1i(location, value);
 }
 
+void shader::set(string name, unsigned int count, unsigned int * values)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	if(location == -1) error("uniform " + name + " not found");
+	else glUniform1uiv(location, count, values);
+}
+
 void shader::use()
 {
 	glUseProgram(id);

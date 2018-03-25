@@ -21,6 +21,6 @@ class application
 	private:
 
 		GLFWwindow * window;
-		chrono::high_resolution_clock::time_point last_step;
+		chrono::high_resolution_clock::time_point start_time;
 		float _elapsed;
 };
