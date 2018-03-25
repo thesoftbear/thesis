@@ -85,6 +85,13 @@ void shader::set(string name, mat4 value)
 	else glUniformMatrix4fv(location, 1, false, &value[0][0]);
 }
 
+void shader::set(string name, int value)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	if (location == -1) error("uniform " + name + " not found");
+	else glUniform1i(location, value);
+}
+
 void shader::use()
 {
 	glUseProgram(id);

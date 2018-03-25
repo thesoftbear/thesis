@@ -6,15 +6,19 @@ layout(std430, binding = 0) readonly buffer particleDataSSBO
 };
 
 flat out vec3 vertex_position;
+flat out vec3 original_position;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+
 uniform float particleSize;
 
 void main()
 {
 	vertex_position = (modelMatrix * vec4(particle_data[gl_VertexID].xyz, 1.0)).xyz;
+
+	original_position = particle_data[gl_VertexID].xyz;
 
 	gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(particle_data[gl_VertexID].xyz, 1.0);
 

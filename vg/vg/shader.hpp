@@ -21,6 +21,7 @@ class shader
 		void use();
 		void set(string name, float value);
 		void set(string name, unsigned int value);
+		void set(string name, int value);
 		void set(string name, mat4 value);
 		void execute(unsigned int x, unsigned int y = 1, unsigned int z = 1);
 

@@ -172,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cone_tracing.glcs" />
+    <None Include="draw_occlusion.glfs" />
     <None Include="draw_particles.glfs" />
     <None Include="draw_particles.glvs" />
     <None Include="fullscreen_quad.glvs" />

@@ -39,5 +39,6 @@
     <None Include="scattering_sorted2.glcs" />
     <None Include="ray_casting.glfs" />
     <None Include="fullscreen_quad.glvs" />
+    <None Include="draw_occlusion.glfs" />
   </ItemGroup>
 </Project>

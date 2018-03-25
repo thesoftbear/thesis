@@ -59,13 +59,7 @@ bool application::step()
 
 	last_step = now;
 
-	// swap buffers
-
-	glfwSwapBuffers(window);
-	
-	// clear buffer
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	swap();
 
 	// poll window events
 
@@ -74,6 +68,17 @@ bool application::step()
 	// finish main loop once window closes
 
 	return !glfwWindowShouldClose(window);
+}
+
+void application::swap()
+{
+	// swap buffers
+
+	glfwSwapBuffers(window);
+
+	// clear buffer
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 float application::elapsed()

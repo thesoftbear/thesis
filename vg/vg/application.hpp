@@ -16,6 +16,7 @@ class application
 
 		bool step();
 		float elapsed();
+		void swap();
 
 	private:
 

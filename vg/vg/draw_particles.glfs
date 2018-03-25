@@ -4,8 +4,10 @@ layout (location = 0) out vec3 fragment_position;
 layout (location = 1) out vec3 fragment_normal;
 
 flat in vec3 vertex_position;
- 
+flat in vec3 original_position;
+
 uniform mat4 modelMatrix;
+uniform mat4 inverseModelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform float particleSize;
@@ -32,7 +34,6 @@ float intersect(ray r)
 	float t = b * b - c;
 	if( t > 0.0) t = -b - sqrt(t);
 	return t;
-
 }
 
 void main()
@@ -53,8 +54,11 @@ void main()
 	}
 	else
 	{
-		fragment_position = r.origin + intersection * r.direction;
-		fragment_normal = normalize(fragment_position - vertex_position);
+		// fragment_position = r.origin + intersection * r.direction;
+		// fragment_normal = normalize(fragment_position - vertex_position);
+
+		fragment_position = (inverseModelMatrix * vec4(r.origin + intersection * r.direction, 1.0)).xyz; 
+		fragment_normal = normalize(fragment_position - original_position);
 
 		gl_FragDepth = intersection / 3;
 	}

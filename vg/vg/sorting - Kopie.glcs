@@ -1,0 +1,56 @@
+#version 430
+
+layout(local_size_x = 32) in;
+
+// per particle position
+
+	layout(std430, binding = 0) readonly buffer particleDataSSBO
+	{
+		vec4 particle_data[];
+	};
+
+
+// per particle cell & index inside cell
+
+	layout(std430, binding = 1) readonly buffer particleInfoSSBO
+	{
+		uvec2 particle_info[];
+	};
+
+
+// per cell particle count & start address
+
+	layout(std430, binding = 2) readonly buffer cellInfoSSBO
+	{
+		uvec2 cell_info[];
+	};
+
+
+// per cell sorted particles
+
+	layout(std430, binding = 6) writeonly buffer sortedDataSSBO
+	{
+		vec4 sorted_data[];
+	};
+
+
+uniform uint particle_count;
+
+#pragma optimize (off)
+
+void main()
+{
+	// get particle
+
+		uint particle_index = gl_GlobalInvocationID.x;
+	
+		if(particle_index >= particle_count) return;
+
+	// move to new index
+	
+		uvec2 i = particle_info[particle_index];
+
+		uint sorted_index = cell_info[i.x].y + i.y;
+		
+		sorted_data[sorted_index] = particle_data[particle_index];
+}
