@@ -2,7 +2,7 @@
 
 layout(std430, binding = 0) readonly buffer particleDataSSBO
 {
-	vec4 particle_data[]; // a: future particle radius
+	vec4 particle_data[];
 };
 
 flat out vec3 vertex_position;
@@ -16,9 +16,9 @@ uniform float particleSize;
 
 void main()
 {
-	vertex_position = (modelMatrix * vec4(particle_data[gl_VertexID].xyz, 1.0)).xyz;
-
 	original_position = particle_data[gl_VertexID].xyz;
+
+	vertex_position = (modelMatrix * vec4(original_position, 1.0)).xyz;
 
 	gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(particle_data[gl_VertexID].xyz, 1.0);
 

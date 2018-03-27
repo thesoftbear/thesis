@@ -8,9 +8,8 @@
 #include <iostream>
 
 const unsigned int voxels = 256;
-const unsigned int cells = voxels / 2;
-const float particle_radius = 0.01f;
-const unsigned int particle_count = 25000;
+const float particle_radius = 0.003f;
+const unsigned int particle_count = 10000000;
 
 int main()
 {
@@ -23,43 +22,29 @@ int main()
 	// p.read("E:/exp2mill.mmpld");
 	// p.select(0);
 
-	hashgrid h(voxels / 8);
+	hashgrid h(voxels / 4);
 	h.insert(p);
 
 	voxelgrid v(voxels);
-	v.scatter(p);
+	
+	for (unsigned int i = 0; i < 10; i++)
+	{
+		v.scatter(p);
+	}
+	
 	v.mipmap();
 
 	ambientocclusion ao;
-
-	while (true)
+	
+	ao.draw_geometry(a.elapsed(), p);
+	
+	while (a.step())
 	{
-		float start = a.elapsed();
-		while (a.elapsed() - start < 10000.f)
-		{
-			ao.draw_geometry(a.elapsed(), p);
+		ao.cast_rays(h);
+		
+		//ao.trace_cones(v);
 
-			for (unsigned int i = 0; i < 100; i++)
-			{
-				ao.cast_rays(h);
-			}
-
-			ao.draw_occlusion();
-
-			a.step();
-		}
-
-		start = a.elapsed();
-		while (a.elapsed() - start < 10000.f)
-		{
-			ao.draw_geometry(a.elapsed(), p);
-
-			ao.trace_cones(v);
-
-			ao.draw_occlusion();
-
-			a.step();
-		}
+		ao.draw_occlusion();
 	}
 
 	return 0;

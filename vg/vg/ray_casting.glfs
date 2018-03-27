@@ -10,7 +10,7 @@ uniform float roll;
 uniform uint cell_count;
 uniform float cell_size;
 uniform float particle_size;
-uniform uint ray_samples;
+uniform float ray_samples;
 
 layout(std430, binding = 2) readonly buffer cellInfoSSBO
 {
@@ -68,7 +68,7 @@ void main()
 	mat4 pitch_matrix = rotationMatrix(fragment_right, pitch);
 	mat4 roll_matrix = rotationMatrix(fragment_normal, roll);
 
-	ray r = ray(fragment_position + 0.001 * fragment_normal, (roll_matrix * pitch_matrix * vec4(fragment_normal, 1)).xyz);
+	ray r = ray(fragment_position + 0.0001 * fragment_normal, (roll_matrix * pitch_matrix * vec4(fragment_normal, 1)).xyz);
 
 	vec3 step = (r.direction / max(max(abs(r.direction.x), abs(r.direction.y)), abs(r.direction.z))) * cell_size;
 	vec3 cell_position = r.origin;
@@ -108,7 +108,7 @@ void main()
 			iteration += 1;
 	}
 
-	float brightness = pow(intersection / no_intersection, 4.0) * cos(pitch);
+	float brightness = pow(intersection / no_intersection, 3.0) * cos(pitch);
 
 	if(ray_samples > 0) brightness += imageLoad(occlusion_texture, ivec2(gl_FragCoord.xy)).x; 
 

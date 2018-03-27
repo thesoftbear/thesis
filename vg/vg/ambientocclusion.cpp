@@ -82,7 +82,7 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
 	mat4 inverseTranslation = translate(mat4(1.f), vec3(0.5f, 0.5f, 0.5f));
 
-	float model_rotation = time / 10000.f;
+	float model_rotation = time / 40000.f;
 
 	mat4 rotation = toMat4(quat(vec3(0, model_rotation, 0)));
 	mat4 inverseRotation = transpose(rotation);
@@ -90,7 +90,7 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	mat4 model = rotation * translation;
 	mat4 inverseModel = inverseTranslation * inverseRotation;
 
-	mat4 view = lookAt(vec3(0, 0, 1.25f), vec3(0, 0, 0), vec3(0, 1, 0));
+	mat4 view = lookAt(vec3(0, 0, 0.65f), vec3(0, 0, 0), vec3(0, 1, 0));
 
 	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.01f, 10.f);
 
@@ -133,10 +133,9 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 	// voxelgrid level offsets
 
 	unsigned int levels = log(float(v.get_resolution())) / log(2.f) + 1;
-	unsigned int * offsets = new unsigned int[levels];
-
 	trace_cones_shader.set("voxel_levels", levels);
 
+	unsigned int * offsets = new unsigned int[levels];
 	unsigned int level_counter = 0;
 	unsigned int level_offset = 0;
 	for (unsigned int resolution = v.get_resolution(); resolution >= 1; resolution /= 2)
@@ -153,15 +152,15 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 
 	trace_cones_shader.execute(GL_TRIANGLE_STRIP, 0, 4);
 
-	samples += 1;
+	samples = 1.f;
 }
 
 void ambientocclusion::cast_rays(hashgrid & h)
 {
 	uniform_real_distribution<float> distribution(0.f, 1.f);
 
-	float pitch = distribution(generator) * glm::pi<float>() / 2.f - glm::pi<float>() / 4.f;
-	float roll = distribution(generator) * glm::pi<float>();
+	float pitch = distribution(generator) * glm::pi<float>() / 2.0 - glm::pi<float>() / 4.0f;
+	float roll = distribution(generator) * glm::pi<float>() * 2.f;
 
 	glBindVertexArray(vao);
 
@@ -187,7 +186,7 @@ void ambientocclusion::cast_rays(hashgrid & h)
 
 	ray_casting.execute(GL_TRIANGLE_STRIP, 0, 4);
 
-	samples += 1;
+	samples += glm::cos(pitch);
 }
 
 void ambientocclusion::draw_occlusion()
@@ -196,6 +195,8 @@ void ambientocclusion::draw_occlusion()
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, position_texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, normal_texture);
 
 	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 

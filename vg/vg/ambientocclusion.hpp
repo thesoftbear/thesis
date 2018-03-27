@@ -30,7 +30,7 @@ class ambientocclusion
 		GLuint normal_texture;
 		GLuint occlusion_texture;
 		
-		unsigned int samples;
+		float samples;
 
 		GLuint framebuffer;
 		GLuint renderbuffer;

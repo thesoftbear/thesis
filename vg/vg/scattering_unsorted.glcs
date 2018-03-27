@@ -46,7 +46,7 @@ void contribute(uvec3 voxel_coordinates, vec3 particle_position)
 	// get cell index
 
 		uint voxel_index = (voxel_count * voxel_coordinates.z + voxel_coordinates.y) * voxel_count + voxel_coordinates.x;
-		
+
 		// voxel_index = gl_LocalInvocationIndex;
 
 		vec3 early_vector = particle_position - voxel_position;

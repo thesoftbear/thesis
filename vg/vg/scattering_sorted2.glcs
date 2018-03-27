@@ -37,6 +37,20 @@ uniform float outside_distance_squared;
 
 float factor = voxel_size / 6.0;
 
+const uint hashgrid_resolution = 8;
+const uint voxel_per_cell = 256 / hashgrid_resolution;
+
+uint calculate_index(uvec3 coordinates)
+{
+	uvec3 hashgrid_coordinates = uvec3(0);
+	uint hashgrid_index = hashgrid_coordinates.x + hashgrid_resolution * (hashgrid_coordinates.y + hashgrid_resolution * hashgrid_coordinates.z);
+	
+	uvec3 inner_coordinates = coordinates % voxel_per_cell;
+	uint inner_index = inner_coordinates.x + voxel_per_cell * (inner_coordinates.y + voxel_per_cell * inner_coordinates.z);
+
+	return voxel_per_cell * voxel_per_cell * voxel_per_cell * hashgrid_index + inner_index;
+}
+
 void contribute(uvec3 voxel_coordinates, vec3 particle_position)
 {
 	// get voxel position
@@ -46,15 +60,9 @@ void contribute(uvec3 voxel_coordinates, vec3 particle_position)
 	// get cell index
 
 		uint voxel_index = (voxel_count * voxel_coordinates.z + voxel_coordinates.y) * voxel_count + voxel_coordinates.x;
-		
-		/*
-		uvec3 random_coordinates = (voxel_coordinates + uvec3(7, 255, 81)) * uvec3(12237, 7772, 1819);
-		random_coordinates.x %= voxel_count;
-		random_coordinates.y %= voxel_count;
-		random_coordinates.z %= voxel_count;
 
-		uint voxel_index = (voxel_count * random_coordinates.z + random_coordinates.y) * voxel_count + random_coordinates.x;
-		*/
+		// voxel_index = calculate_index(voxel_coordinates);
+
 		vec3 early_vector = particle_position - voxel_position;
 		float squared_distance = dot(early_vector, early_vector);
 	

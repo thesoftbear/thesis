@@ -26,13 +26,11 @@ struct sphere
 	float radius;
 };
 
-float intersect(ray r)
+float intersect(ray r, sphere s)
 {
-	float sphere_radius = particleSize;
-
-	vec3 oc = r.origin - vertex_position;
+	vec3 oc = r.origin - s.center;
 	float b = dot(r.direction, oc);
-	float c = dot(oc, oc) - sphere_radius * sphere_radius;
+	float c = dot(oc, oc) - s.radius * s.radius;
 	float t = b * b - c;
 	if( t > 0.0) t = -b - sqrt(t);
 	return t;
@@ -48,20 +46,21 @@ void main()
 	r.origin = -viewMatrix[3].xyz;
 	r.direction = normalize(coord.xyz - r.origin); 
 
-	float intersection = intersect(r);
+	sphere s;
+	s.center = vertex_position;
+	s.radius = particleSize;
 
-	if(intersection < 0.0)
+	float intersection = intersect(r, s);
+
+	if(intersection <= 0.0)
 	{
 		discard;
 	}
 	else
 	{
-		// fragment_position = r.origin + intersection * r.direction;
-		// fragment_normal = normalize(fragment_position - vertex_position);
-
 		fragment_position = (inverseModelMatrix * vec4(r.origin + intersection * r.direction, 1.0)).xyz; 
 		fragment_normal = normalize(fragment_position - original_position);
 
-		gl_FragDepth = intersection / 3.f;
+		gl_FragDepth = intersection / 3.0;
 	}
 }
