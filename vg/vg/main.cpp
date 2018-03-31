@@ -8,8 +8,8 @@
 #include <iostream>
 
 const unsigned int voxels = 256;
-const float particle_radius = 0.003f;
-const unsigned int particle_count = 10000000;
+const float particle_radius = 0.0025f;
+const unsigned int particle_count = 300000;
 
 int main()
 {
@@ -27,22 +27,21 @@ int main()
 
 	voxelgrid v(voxels);
 	
-	for (unsigned int i = 0; i < 10; i++)
-	{
-		v.scatter(p);
-	}
+	//for(unsigned int i = 0; i < 10; i++) v.scatter(h);
 	
-	v.mipmap();
+	for(unsigned int i = 0; i < 1; i++) v.scatterTexture2(h);
+
+	v.mipmapTexture();
 
 	ambientocclusion ao;
-	
-	ao.draw_geometry(a.elapsed(), p);
-	
+		
 	while (a.step())
 	{
-		ao.cast_rays(h);
-		
-		//ao.trace_cones(v);
+		ao.update_geometry(a.get_state(), p);
+
+		//for (unsigned int i = 0; i < 5; i++) ao.cast_rays(h);
+
+		ao.trace_cones(v);
 
 		ao.draw_occlusion();
 	}

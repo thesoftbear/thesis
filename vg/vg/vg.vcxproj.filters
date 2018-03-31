@@ -38,5 +38,6 @@
     <None Include="fullscreen_quad.glvs" />
     <None Include="draw_occlusion.glfs" />
     <None Include="cone_tracing.glfs" />
+    <None Include="scattering_sorted3.glcs" />
   </ItemGroup>
 </Project>

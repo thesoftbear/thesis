@@ -179,6 +179,7 @@
     <None Include="mipmap.glcs" />
     <None Include="ray_casting.glfs" />
     <None Include="scattering_sorted2.glcs" />
+    <None Include="scattering_sorted3.glcs" />
     <None Include="scattering_unsorted.glcs" />
     <None Include="scattering_sorted.glcs" />
     <None Include="scattering_texture.glfs" />

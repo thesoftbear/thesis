@@ -7,6 +7,17 @@
 
 using namespace std;
 
+struct application_state
+{
+	float elapsed;
+	bool left_pressed;
+	bool right_pressed;
+	bool up_pressed;
+	bool down_pressed;
+	bool in_pressed;
+	bool out_pressed;
+};
+
 class application
 {
 	public:
@@ -15,12 +26,11 @@ class application
 		~application();
 
 		bool step();
-		float elapsed();
-		void swap();
+		application_state get_state();
 
 	private:
 
 		GLFWwindow * window;
 		chrono::high_resolution_clock::time_point start_time;
-		float _elapsed;
+		application_state state;
 };

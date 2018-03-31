@@ -14,12 +14,16 @@ void main()
 	vec3 fragment_position = texture(position_texture, gl_FragCoord.xy / vec2(1280, 720)).xyz;
 	vec3 fragment_normal = texture(normal_texture, gl_FragCoord.xy / vec2(1280, 720)).xyz;
 
-	if(fragment_position == vec3(0)) discard;
+	if(fragment_position == vec3(0))
+	{
+		float background = 0.25 * gl_FragCoord.y / 720 + 0.75;
+		fragment_color = vec4(vec3(background), 1);
+		return;
+	};
 
 	float brightness = imageLoad(occlusion_texture, ivec2(gl_FragCoord.xy)).x; 
 
 	float color = brightness / samples;
 
-	// float diffuse = clamp(dot(normalize(fragment_normal), normalize(vec3(-10, 10, 10))), 0.0, 1.0) * color;
 	fragment_color = vec4(vec3(color), 1);
 }

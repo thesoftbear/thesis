@@ -40,6 +40,8 @@ application::application()
 
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
+
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 }
 
 application::~application()
@@ -53,11 +55,26 @@ bool application::step()
 {
 	// update time
 
-	auto now = chrono::high_resolution_clock::now();
+	state.elapsed = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - start_time).count() / 1000.f;
 
-	_elapsed = chrono::duration_cast<chrono::microseconds>(now - start_time).count() / 1000.f;
+	// update input
 
-	swap();
+	state.left_pressed = glfwGetKey(window, GLFW_KEY_LEFT);
+	state.right_pressed = glfwGetKey(window, GLFW_KEY_RIGHT);
+	state.up_pressed = glfwGetKey(window, GLFW_KEY_UP);
+	state.down_pressed = glfwGetKey(window, GLFW_KEY_DOWN);
+	state.in_pressed = glfwGetKey(window, GLFW_KEY_I);
+	state.out_pressed = glfwGetKey(window, GLFW_KEY_O);
+
+	// swap buffers
+
+	glfwSwapBuffers(window);
+
+	// clear buffers
+
+	glClearColor(0, 0, 0, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// poll window events
 
@@ -68,20 +85,7 @@ bool application::step()
 	return !glfwWindowShouldClose(window);
 }
 
-void application::swap()
+application_state application::get_state()
 {
-	// swap buffers
-
-	glfwSwapBuffers(window);
-
-	// clear buffer
-
-	glClearColor(0, 0, 0, 0);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-float application::elapsed()
-{
-	return _elapsed;
+	return state;
 }

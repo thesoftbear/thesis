@@ -20,6 +20,14 @@ voxelgrid::voxelgrid(unsigned int resolution)
 	_mipmap.source("../vg/mipmap.glcs");
 
 	_scatter_texture.source("../vg/scattering_texture.glvs", "../vg/scattering_texture.glgs", "../vg/scattering_texture.glfs");
+
+	_scatter_texture2.source("../vg/scattering_sorted3.glcs");
+
+	glGenTextures(1, &_voxel_texture);
+	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32UI, _resolution, _resolution, _resolution, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 voxelgrid::~voxelgrid()
@@ -98,34 +106,6 @@ void voxelgrid::scatter(hashgrid & hashgrid)
 	auto start = chrono::high_resolution_clock::now();
 
 	_scatter_sorted.use();
-	/*
-	hashgrid.get_cell_info().bind(2);
-	hashgrid.get_particle_data().bind(6);
-	_voxel_data.bind(7);
-	float voxel_size = 1.f / _resolution;
-	float voxel_size_squared = voxel_size * voxel_size;
-	float voxel_radius = sqrt(voxel_size_squared + voxel_size_squared + voxel_size_squared) / 2;
-	_scatter_sorted.set("voxel_size", voxel_size);
-	_scatter_sorted.set("voxel_count", _resolution);
-	_scatter_sorted.set("cell_count", hashgrid.get_resolution());
-	float particle_size = hashgrid.get_particle_size();
-	_scatter_sorted.set("particle_size", particle_size);
-	float voxel_inside_distance = particle_size - voxel_radius;
-	_scatter_sorted.set("voxel_inside_distance_squared", voxel_inside_distance * voxel_inside_distance);
-	float particle_inside_distance = voxel_radius - particle_size;
-	_scatter_sorted.set("particle_inside_distance_squared", particle_inside_distance * particle_inside_distance);
-	float outside_distance = particle_size + voxel_radius;
-	_scatter_sorted.set("outside_distance_squared", outside_distance * outside_distance);
-	_scatter_sorted.set("particle_size_squared", particle_size * particle_size);
-
-	unsigned int groups = hashgrid.get_resolution();
-
-	GLuint timer_queries[2];
-	glGenQueries(2, timer_queries);
-	glQueryCounter(timer_queries[0], GL_TIMESTAMP);
-
-	_scatter_sorted.execute(groups, groups, groups);
-	*/
 
 	hashgrid.get_particle_data().bind(0);
 	_voxel_data.bind(1);
@@ -310,6 +290,56 @@ void voxelgrid::scatterTexture(hashgrid & hashgrid)
 	glDeleteFramebuffers(1, &framebuffer);
 }
 
+void voxelgrid::scatterTexture2(hashgrid & hashgrid)
+{
+	auto start = chrono::high_resolution_clock::now();
+
+	glBindImageTexture(1, _voxel_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+
+	_scatter_texture2.use();
+
+	_scatter_texture2.set("voxel_texture", 1);
+
+	hashgrid.get_particle_data().bind(0);
+
+	float voxel_size = 1.f / _resolution;
+	float voxel_size_squared = voxel_size * voxel_size;
+	float voxel_radius = sqrt(voxel_size_squared + voxel_size_squared + voxel_size_squared) / 2;
+	_scatter_texture2.set("voxel_size", voxel_size);
+	_scatter_texture2.set("voxel_count", _resolution);
+	float particle_size = hashgrid.get_particle_size();
+	unsigned int particle_count = hashgrid.get_particle_number();
+
+	_scatter_texture2.set("particle_count", particle_count);
+	_scatter_texture2.set("particle_size", particle_size);
+	float voxel_inside_distance = particle_size - voxel_radius;
+	_scatter_texture2.set("voxel_inside_distance_squared", voxel_inside_distance * voxel_inside_distance);
+	float particle_inside_distance = voxel_radius - particle_size;
+	_scatter_texture2.set("particle_inside_distance_squared", particle_inside_distance * particle_inside_distance);
+	float outside_distance = particle_size + voxel_radius;
+	_scatter_texture2.set("outside_distance_squared", outside_distance * outside_distance);
+	_scatter_texture2.set("particle_size_squared", particle_size * particle_size);
+
+	unsigned int groups = ceil(particle_count / 32.f);
+
+	GLuint timer_queries[2];
+	glGenQueries(2, timer_queries);
+	glQueryCounter(timer_queries[0], GL_TIMESTAMP);
+
+	_scatter_texture2.execute(groups, 1, 1);
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+	GLuint64 time_0, time_1;
+	glQueryCounter(timer_queries[1], GL_TIMESTAMP);
+	glGetQueryObjectui64v(timer_queries[0], GL_QUERY_RESULT, &time_0);
+	glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &time_1);
+
+	auto end = chrono::high_resolution_clock::now();
+
+	cout << "scattering texture 2: " << float(time_1 - time_0) / 1000000 << " ms (" << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms)" << endl;
+}
+
 void voxelgrid::gather(hashgrid & hashgrid)
 {
 	_voxel_data.clear();
@@ -393,6 +423,12 @@ void voxelgrid::mipmap()
 	glGetQueryObjectui64v(timer_queries[1], GL_QUERY_RESULT, &end);
 
 	cout << " mipmap: " << double(end - start) / 1000000 << " ms" << endl;
+}
+void voxelgrid::mipmapTexture()
+{
+	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
+	glGenerateMipmap(GL_TEXTURE_3D);
+	glBindTexture(GL_TEXTURE_3D, 0);
 }
 
 unsigned int voxelgrid::get_resolution()

@@ -9,6 +9,8 @@
 #include "gtx\quaternion.hpp"
 #include "glm.hpp"
 #include "gtc/constants.hpp"
+#include "gtc\quaternion.hpp"
+#include "gtx/transform.hpp"
 
 ambientocclusion::ambientocclusion()
 {
@@ -43,6 +45,9 @@ ambientocclusion::ambientocclusion()
 	glGenVertexArrays(1, &vao);
 
 	samples = 0;
+
+	distance = 1.05f;
+	orientation = angleAxis(0.f, vec3(0));
 }
 
 ambientocclusion::~ambientocclusion()
@@ -56,8 +61,37 @@ ambientocclusion::~ambientocclusion()
 	glDeleteVertexArrays(1, &vao);
 }
 
-void ambientocclusion::draw_geometry(float time, particles & p)
+void ambientocclusion::update_geometry(application_state s, particles & p)
 {
+	float velocity = 0.01f;
+
+	// scale velocity based on camera distance orientation.z
+
+	float scale = 0.1 + pow((glm::min(float(distance), 0.9f) / 0.9f), 2.0);
+
+	float last_distance = distance;
+
+	if (s.in_pressed) distance -= velocity * scale;
+	if (s.out_pressed) distance += velocity * scale;
+
+	distance = glm::max(distance, 0.01f);
+
+	quat last_orientation = orientation;
+
+	vec2 rotation_angles(0);
+
+	if (s.left_pressed) rotation_angles.y = -velocity;
+	if (s.right_pressed) rotation_angles.y = velocity;
+	if (s.up_pressed) rotation_angles.x = -velocity;
+	if (s.down_pressed) rotation_angles.x = velocity;
+
+	quat x_rotation = angleAxis(rotation_angles.x, vec3(1, 0, 0));
+	quat y_rotation = angleAxis(rotation_angles.y, vec3(0, 1, 0));
+
+	orientation = x_rotation * y_rotation * orientation;
+
+	if (last_distance == distance && orientation == last_orientation) return;
+
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, position_texture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normal_texture, 0);
@@ -82,15 +116,13 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	mat4 translation = translate(mat4(1.f), vec3(-0.5f, -0.5f, -0.5f));
 	mat4 inverseTranslation = translate(mat4(1.f), vec3(0.5f, 0.5f, 0.5f));
 
-	float model_rotation = time / 40000.f;
-
-	mat4 rotation = toMat4(quat(vec3(0, model_rotation, 0)));
+	mat4 rotation = toMat4(orientation);
 	mat4 inverseRotation = transpose(rotation);
 
 	mat4 model = rotation * translation;
 	mat4 inverseModel = inverseTranslation * inverseRotation;
 
-	mat4 view = lookAt(vec3(0, 0, 0.65f), vec3(0, 0, 0), vec3(0, 1, 0));
+	mat4 view = lookAt(vec3(0, 0, distance), vec3(0, 0, 0), vec3(0, 1, 0));
 
 	mat4 projection = perspective(radians(65.f), 1280.f / 720.f, 0.01f, 10.f);
 
@@ -103,12 +135,12 @@ void ambientocclusion::draw_geometry(float time, particles & p)
 	draw_geometry_shader.set("particleSize", p.size());
 	draw_geometry_shader.execute(GL_POINTS, 0, p.number());
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 	samples = 0;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void ambientocclusion::draw_geometry(float time, hashgrid & h)
+void ambientocclusion::update_geometry(application_state s, hashgrid & h)
 {
 
 }
@@ -122,9 +154,10 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, normal_texture);
 
-	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-
 	trace_cones_shader.use();
+
+	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+	trace_cones_shader.set("occlusion_texture", 0);
 
 	trace_cones_shader.set("opening_angle", radians(90.f));
 	trace_cones_shader.set("voxel_count", v.get_resolution());
@@ -148,8 +181,6 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 	trace_cones_shader.set("level_offsets", levels, offsets);
 	delete[] offsets;
 
-	trace_cones_shader.set("occlusion_texture", 0);
-
 	trace_cones_shader.execute(GL_TRIANGLE_STRIP, 0, 4);
 
 	samples = 1.f;
@@ -159,7 +190,7 @@ void ambientocclusion::cast_rays(hashgrid & h)
 {
 	uniform_real_distribution<float> distribution(0.f, 1.f);
 
-	float pitch = distribution(generator) * glm::pi<float>() / 2.0 - glm::pi<float>() / 4.0f;
+	float pitch = acos(distribution(generator));
 	float roll = distribution(generator) * glm::pi<float>() * 2.f;
 
 	glBindVertexArray(vao);

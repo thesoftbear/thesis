@@ -1,9 +1,12 @@
 #pragma once
 
+#include "application.hpp"
 #include "voxelgrid.hpp"
 #include "hashgrid.hpp"
 
 #include <random>
+
+#include "gtc\quaternion.hpp"
 
 class ambientocclusion
 {
@@ -11,8 +14,8 @@ class ambientocclusion
 
 		ambientocclusion();
 		~ambientocclusion();
-		void draw_geometry(float time, particles & p); 
-		void draw_geometry(float time, hashgrid & h);
+		void update_geometry(application_state s, particles & p); 
+		void update_geometry(application_state s, hashgrid & h);
 		void trace_cones(voxelgrid & v);
 		void cast_rays(hashgrid & h);
 		void draw_occlusion();
@@ -35,4 +38,7 @@ class ambientocclusion
 		GLuint framebuffer;
 		GLuint renderbuffer;
 		GLuint vao;
+
+		float distance;
+		quat orientation;
 };
