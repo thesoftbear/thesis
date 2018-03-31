@@ -162,6 +162,8 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 	trace_cones_shader.set("opening_angle", radians(90.f));
 	trace_cones_shader.set("voxel_count", v.get_resolution());
 	trace_cones_shader.set("voxel_size", 1.f / v.get_resolution());
+	
+	v.get_data().bind(7);
 
 	// voxelgrid level offsets
 

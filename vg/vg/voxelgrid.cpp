@@ -435,3 +435,13 @@ unsigned int voxelgrid::get_resolution()
 {
 	return _resolution;
 }
+
+GLuint voxelgrid::get_texture()
+{
+	return _voxel_texture;
+}
+
+storage & voxelgrid::get_data()
+{
+	return _voxel_data;
+}

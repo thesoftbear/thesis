@@ -19,6 +19,8 @@ class voxelgrid
 		void mipmap();
 		void mipmapTexture();
 		unsigned int get_resolution();
+		storage & get_data();
+		GLuint get_texture();
 		void scatterTexture2(hashgrid & hashgrid);
 
 	private:
