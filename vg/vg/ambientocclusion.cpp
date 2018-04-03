@@ -153,35 +153,18 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 	glBindTexture(GL_TEXTURE_2D, position_texture);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, normal_texture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_3D, v.get_texture());
 
 	trace_cones_shader.use();
 
 	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+
+	float opening_angle = 45.f;
+
 	trace_cones_shader.set("occlusion_texture", 0);
-
-	trace_cones_shader.set("opening_angle", radians(90.f));
-	trace_cones_shader.set("voxel_count", v.get_resolution());
+	trace_cones_shader.set("opening_angle", radians(opening_angle));
 	trace_cones_shader.set("voxel_size", 1.f / v.get_resolution());
-	
-	v.get_data().bind(7);
-
-	// voxelgrid level offsets
-
-	unsigned int levels = log(float(v.get_resolution())) / log(2.f) + 1;
-	trace_cones_shader.set("voxel_levels", levels);
-
-	unsigned int * offsets = new unsigned int[levels];
-	unsigned int level_counter = 0;
-	unsigned int level_offset = 0;
-	for (unsigned int resolution = v.get_resolution(); resolution >= 1; resolution /= 2)
-	{
-		offsets[level_counter] = level_offset;
-		level_offset += resolution * resolution * resolution;
-		level_counter += 1;
-	}
-
-	trace_cones_shader.set("level_offsets", levels, offsets);
-	delete[] offsets;
 
 	trace_cones_shader.execute(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -215,7 +198,7 @@ void ambientocclusion::cast_rays(hashgrid & h)
 	ray_casting.set("cell_size", 1.f / h.get_resolution());
 	ray_casting.set("particle_size", h.get_particle_size());
 	ray_casting.set("ray_samples", samples);
-	ray_casting.set("occlusion_texture", 0);
+
 
 	ray_casting.execute(GL_TRIANGLE_STRIP, 0, 4);
 

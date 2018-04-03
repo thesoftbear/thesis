@@ -18,7 +18,7 @@ application::application()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(1280, 720, "Scattering Test", NULL, NULL);
+	window = glfwCreateWindow(1280, 720, "Particle Ambient Occlusion", NULL, NULL);
 	
 	if (!window) error("glfw window creation failed");
 

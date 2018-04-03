@@ -31,7 +31,7 @@ int main()
 	
 	for(unsigned int i = 0; i < 1; i++) v.scatterTexture2(h);
 
-	v.mipmapTexture();
+	//v.mipmapTexture();
 
 	ambientocclusion ao;
 		
@@ -39,9 +39,9 @@ int main()
 	{
 		ao.update_geometry(a.get_state(), p);
 
-		//for (unsigned int i = 0; i < 5; i++) ao.cast_rays(h);
+		for (unsigned int i = 0; i < 1; i++) ao.cast_rays(h);
 
-		ao.trace_cones(v);
+		//ao.trace_cones(v);
 
 		ao.draw_occlusion();
 	}

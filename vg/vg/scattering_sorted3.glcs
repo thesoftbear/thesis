@@ -1,5 +1,7 @@
 #version 430
 
+#extension GL_NV_shader_atomic_float : enable
+
 layout(local_size_x = 32) in;
 
 layout(std430, binding = 0) readonly buffer particleStorage
@@ -7,7 +9,7 @@ layout(std430, binding = 0) readonly buffer particleStorage
 	vec4 particle[];
 };
 
-layout(r32ui) uniform uimage3D voxel_texture;
+layout(r32f, binding = 0) uniform coherent image3D voxel_texture;
 
 uniform float voxel_size;
 uniform uint voxel_count;
@@ -32,7 +34,7 @@ void contribute(ivec3 voxel_coordinates, vec3 particle_position)
 
 		vec3 early_vector = particle_position - voxel_position;
 		float squared_distance = dot(early_vector, early_vector);
-	
+
 		if(squared_distance >= outside_distance_squared)
 		{
 			return;
@@ -40,13 +42,15 @@ void contribute(ivec3 voxel_coordinates, vec3 particle_position)
 
 		if(squared_distance <= voxel_inside_distance_squared || squared_distance <= particle_inside_distance_squared)
 		{
-			imageAtomicAdd(voxel_texture, voxel_coordinates, 270);
+			imageAtomicAdd(voxel_texture, voxel_coordinates, 1.0);
 			return;
 		}
 
 	// count sampling points inside particle
 
-		uint voxel_density = 0;
+		float voxel_density = 0.0;
+
+		const float part = 1.0 / 27.0;
 
 		vec3 base = particle_position - voxel_position;
 
@@ -57,7 +61,7 @@ void contribute(ivec3 voxel_coordinates, vec3 particle_position)
 				for(uint x = 0; x < 3; x++)
 				{
 					vec3 distance_vector = base - vec3(x, y, z) * factor;
-					if(dot(distance_vector, distance_vector) <= particle_size_squared) voxel_density += 10;
+					if(dot(distance_vector, distance_vector) <= particle_size_squared) voxel_density += part;
 				}
 			}
 		}

@@ -25,8 +25,8 @@ voxelgrid::voxelgrid(unsigned int resolution)
 
 	glGenTextures(1, &_voxel_texture);
 	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32UI, _resolution, _resolution, _resolution, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, _resolution, _resolution, _resolution, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
@@ -294,11 +294,10 @@ void voxelgrid::scatterTexture2(hashgrid & hashgrid)
 {
 	auto start = chrono::high_resolution_clock::now();
 
-	glBindImageTexture(1, _voxel_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-
 	_scatter_texture2.use();
 
-	_scatter_texture2.set("voxel_texture", 1);
+	_scatter_texture2.set("voxel_texture", 0);
+	glBindImageTexture(0, _voxel_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 
 	hashgrid.get_particle_data().bind(0);
 
@@ -307,11 +306,12 @@ void voxelgrid::scatterTexture2(hashgrid & hashgrid)
 	float voxel_radius = sqrt(voxel_size_squared + voxel_size_squared + voxel_size_squared) / 2;
 	_scatter_texture2.set("voxel_size", voxel_size);
 	_scatter_texture2.set("voxel_count", _resolution);
+
 	float particle_size = hashgrid.get_particle_size();
 	unsigned int particle_count = hashgrid.get_particle_number();
-
 	_scatter_texture2.set("particle_count", particle_count);
 	_scatter_texture2.set("particle_size", particle_size);
+	
 	float voxel_inside_distance = particle_size - voxel_radius;
 	_scatter_texture2.set("voxel_inside_distance_squared", voxel_inside_distance * voxel_inside_distance);
 	float particle_inside_distance = voxel_radius - particle_size;
@@ -338,6 +338,32 @@ void voxelgrid::scatterTexture2(hashgrid & hashgrid)
 	auto end = chrono::high_resolution_clock::now();
 
 	cout << "scattering texture 2: " << float(time_1 - time_0) / 1000000 << " ms (" << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms)" << endl;
+
+	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
+	float * pixels = new float[256 * 256 * 256];
+	glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, pixels);
+
+	unsigned int count = 0;
+	float max = -1;
+	for (unsigned int i = 0; i < 256 * 256 * 256; i++)
+	{
+		if (pixels[i] != 0.f)
+		{
+			count++;
+
+			if (pixels[i] > max) max = pixels[i];
+		}
+	}
+
+	std::cout << count << " pixels are not 0. Max: " << max << std::endl;
+
+	delete[] pixels;
+
+	/*
+	ofstream file("UI_TEXTURE.raw", ios::binary);
+	file.write((char *)pixels, sizeof(float) * 256 * 256 * 256);
+	file.close();
+	*/
 }
 
 void voxelgrid::gather(hashgrid & hashgrid)
