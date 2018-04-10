@@ -110,7 +110,10 @@ void main()
 
 	intersection /= no_intersection;
 
-	float brightness = pow(intersection, 2.0) * cos(pitch);
+	float lambda = 10.0;
+	float rho = 1.0 / (1.0 + lambda * intersection);
+
+	float brightness = (1.0 - rho) * cos(pitch);
 
 	if(ray_samples > 0) brightness += imageLoad(occlusion_texture, ivec2(gl_FragCoord.xy)).x; 
 

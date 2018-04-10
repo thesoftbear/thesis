@@ -45,7 +45,7 @@ void particles::generate(unsigned int frames, unsigned int number, float size)
 		float xs = x - 0.5f;
 		float ys = y - 0.5f;
 		float zs = z - 0.5f;
-		if (sqrt(xs * xs + ys * ys + zs * zs) > 0.5f) continue;
+		if (sqrt(xs * xs + ys * ys + zs * zs) > 0.4f) continue;
 
 		float chance = glm::simplex(glm::vec3(x * 10, y * 10, z * 10));
 
@@ -108,13 +108,16 @@ void particles::read(string path)
 	_offset.reserve(header.frames);
 
 	_coordinates.clear();
-
-	float x_range = header.bounding_box[3] - header.bounding_box[0];
 	float y_range = header.bounding_box[4] - header.bounding_box[1];
 	float z_range = header.bounding_box[5] - header.bounding_box[2];
+
+	float x_range = header.bounding_box[3] - header.bounding_box[0];
+
 	float max_range = (x_range > y_range) ? ((z_range > x_range) ? z_range : x_range) : ((z_range > y_range) ? z_range : y_range);
 
-	const unsigned int target_frame = 120;
+	std::cout << "max_range: " << max_range << endl;
+
+	const unsigned int target_frame = 40;
 
 	for (unsigned int frame = target_frame; frame < header.frames && frame <= target_frame; frame++)
 	{
@@ -152,8 +155,7 @@ void particles::read(string path)
 				file.read((char *)&radius, sizeof(float));
 				_size = radius / max_range;
 			}
-
-			if (vertex_type == 2)
+			else if (vertex_type == 2)
 			{
 				_size = 0.001;
 			}
@@ -194,29 +196,27 @@ void particles::read(string path)
 			unsigned char * data = new unsigned char[count * (vertex_size + color_size)];
 			file.read((char *)data, count * (vertex_size + color_size));
 
-			const unsigned  int factor = 1;
+			const unsigned int factor = 1;
 
 			if (frame == target_frame)
 			{
-				_coordinates.reserve(_coordinates.size() + factor * count * 4);
-				_number = count * factor;
+				_coordinates.reserve(_coordinates.size() + count * 4);
+				_number = count;
 
-				for (unsigned int i = 0; i < factor; i++)
+				for (unsigned int p = 0; p < count; p++)
 				{
-					for (unsigned int p = 0; p < count; p++)
+					if (vertex_type == 1 || vertex_type == 2)
 					{
-						if (vertex_type == 1 || vertex_type == 2)
-						{
-							float * x = (float *)(data + p * (vertex_size + color_size));
-							float * y = x + 1;
-							float * z = y + 1;
+						float * d = (float *)(data + p * (vertex_size + color_size));
 
-							_coordinates.push_back((*x - header.bounding_box[0]) / max_range);
-							_coordinates.push_back((*y - header.bounding_box[1]) / max_range);
-							_coordinates.push_back((*z - header.bounding_box[2]) / max_range);
-							_coordinates.push_back(0);
+						float x = ((*d) - header.bounding_box[0]) / max_range;
+						float y = ((*(d + 1)) - header.bounding_box[1]) / max_range;
+						float z = ((*(d + 2)) - header.bounding_box[2]) / max_range;
 
-						}
+						_coordinates.push_back(x);
+						_coordinates.push_back(y);
+						_coordinates.push_back(z);
+						_coordinates.push_back(0);
 					}
 				}
 			}

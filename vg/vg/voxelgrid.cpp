@@ -25,9 +25,13 @@ voxelgrid::voxelgrid(unsigned int resolution)
 
 	glGenTextures(1, &_voxel_texture);
 	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, _resolution, _resolution, _resolution, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, _resolution, _resolution, _resolution, 0, GL_RED, GL_FLOAT, NULL);
+	glGenerateMipmap(GL_TEXTURE_3D);
 }
 
 voxelgrid::~voxelgrid()
@@ -340,30 +344,35 @@ void voxelgrid::scatterTexture2(hashgrid & hashgrid)
 	cout << "scattering texture 2: " << float(time_1 - time_0) / 1000000 << " ms (" << chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000 << " ms)" << endl;
 
 	glBindTexture(GL_TEXTURE_3D, _voxel_texture);
-	float * pixels = new float[256 * 256 * 256];
-	glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, pixels);
+	glGenerateMipmap(GL_TEXTURE_3D);
+	
+	unsigned int level = 0;
 
-	unsigned int count = 0;
-	float max = -1;
-	for (unsigned int i = 0; i < 256 * 256 * 256; i++)
+	for (unsigned int resolution = 256; resolution > 0; resolution /= 2)
 	{
-		if (pixels[i] != 0.f)
-		{
-			count++;
+		float * pixels = new float[resolution * resolution * resolution];
 
-			if (pixels[i] > max) max = pixels[i];
+		glGetTexImage(GL_TEXTURE_3D, level, GL_RED, GL_FLOAT, pixels);
+		
+		bool valid = 0;
+
+		for (unsigned int i = 0; i < resolution * resolution * resolution; i++)
+		{
+			if (pixels[i] != 0.f)
+			{
+				valid = true;
+				break;
+			}
 		}
+		
+		cout << "level " << level << " is " << (valid ? "valid" : "empty") << endl;
+
+		delete[] pixels;
+		
+		level++;
 	}
 
-	std::cout << count << " pixels are not 0. Max: " << max << std::endl;
-
-	delete[] pixels;
-
-	/*
-	ofstream file("UI_TEXTURE.raw", ios::binary);
-	file.write((char *)pixels, sizeof(float) * 256 * 256 * 256);
-	file.close();
-	*/
+	glBindTexture(GL_TEXTURE_3D, 0);
 }
 
 void voxelgrid::gather(hashgrid & hashgrid)

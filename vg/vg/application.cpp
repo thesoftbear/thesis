@@ -5,7 +5,7 @@
 
 void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
-	// cerr << "GL " << (type == GL_DEBUG_TYPE_ERROR ? "ERROR: " : "MESSAGE: ") << severity << " " << message << endl;
+	cerr << "GL " << (type == GL_DEBUG_TYPE_ERROR ? "ERROR: " : "MESSAGE: ") << severity << " " << message << endl;
 }
 
 application::application()
@@ -65,6 +65,8 @@ bool application::step()
 	state.down_pressed = glfwGetKey(window, GLFW_KEY_DOWN);
 	state.in_pressed = glfwGetKey(window, GLFW_KEY_I);
 	state.out_pressed = glfwGetKey(window, GLFW_KEY_O);
+	state.r_pressed = glfwGetKey(window, GLFW_KEY_R);
+	state.v_pressed = glfwGetKey(window, GLFW_KEY_V);
 
 	// swap buffers
 

@@ -8,8 +8,8 @@
 #include <iostream>
 
 const unsigned int voxels = 256;
-const float particle_radius = 0.0025f;
-const unsigned int particle_count = 300000;
+const float particle_radius = 0.01f;
+const unsigned int particle_count = 50000;
 
 int main()
 {
@@ -18,8 +18,9 @@ int main()
 	particles p;
 	p.generate(1, particle_count, particle_radius);
 	//p.read("E:/laser.mmpld");
-	//p.read("E:/oc_sim42_corrected.mmpld");
-	// p.read("E:/exp2mill.mmpld");
+	// p.read("E:/oc_sim42_corrected.mmpld");
+	//p.read("E:/exp2mill.mmpld");
+	//p.read("E:/laser.00080.chkpt.density.mmpld");
 	// p.select(0);
 
 	hashgrid h(voxels / 4);
@@ -35,13 +36,26 @@ int main()
 
 	ambientocclusion ao;
 		
+	bool ray_casting = true;
+
 	while (a.step())
 	{
-		ao.update_geometry(a.get_state(), p);
+		application_state s = a.get_state();
 
-		for (unsigned int i = 0; i < 1; i++) ao.cast_rays(h);
+		if (s.r_pressed && ray_casting == false)
+		{
+			// reselt ao
+			ray_casting = true;
+		}
+		else if (s.v_pressed && ray_casting == true)
+		{
+			ray_casting = false;
+		}
 
-		//ao.trace_cones(v);
+		ao.update_geometry(s, p);
+
+		if(ray_casting) for (unsigned int i = 0; i < 3; i++) ao.cast_rays(h);
+		else ao.trace_cones(v);
 
 		ao.draw_occlusion();
 	}

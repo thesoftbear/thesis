@@ -24,25 +24,21 @@ float trace_cone(cone c)
 	float sample_distance = voxel_size;
 	float occlusion = 0.0;
 
-	while(sample_position.x >= 0.0 && sample_position.x <= 1.0 && sample_position.y >= 0.0 && sample_position.y <= 1.0 && sample_position.z >= 0.0 && sample_position.z <= 1.0)
+	float occlusion_limit = 1.0;
+
+	while(occlusion < occlusion_limit && sample_position.x >= 0.0 && sample_position.x <= 1.0 && sample_position.y >= 0.0 && sample_position.y <= 1.0 && sample_position.z >= 0.0 && sample_position.z <= 1.0)
 	{
 		// get current density value 
 
 			float cone_radius = (sample_distance / sin(c.beta)) * sin(c.alpha);
-			float sample_level = log((cone_radius * 2.0) / voxel_size) / log(2.0);
+			float sample_level = clamp(log2((cone_radius * 2.0) / voxel_size), 0.0, 8.0);
 			vec3 voxel_position = sample_position;
-			
-			float coarse_sample = ceil(sample_level);
-			float fine_sample = floor(sample_level);
-			float coarse_weight = sample_level - fine_sample;
-			float fine_weight = 1.0 - coarse_weight;
-			float fine_density_value = textureLod(voxel_texture, voxel_position, fine_sample).r;
-			float coarse_density_value = textureLod(voxel_texture, voxel_position, coarse_sample).r;
-			float density_value = fine_weight * fine_density_value + coarse_weight * coarse_density_value;
+
+			float density_value = min(textureLod(voxel_texture, voxel_position, sample_level).r, 1.0);
 
 		// update occlusion
 
-			float lambda = 1.0;
+			float lambda = 25.0;
 			float weight = 1.0 / (1.0 + lambda * cone_radius);
 			occlusion = occlusion + (1.0 - occlusion) * density_value * weight;
 
@@ -52,7 +48,9 @@ float trace_cone(cone c)
  			sample_position = c.origin + c.direction * sample_distance;
 	}
 
-	return occlusion;
+	
+
+	return min(occlusion, occlusion_limit) * (1.0 / occlusion_limit);
 }
 
 mat4 create_rotation_matrix(vec3 axis, float angle)

@@ -16,6 +16,8 @@ struct application_state
 	bool down_pressed;
 	bool in_pressed;
 	bool out_pressed;
+	bool r_pressed;
+	bool v_pressed;
 };
 
 class application

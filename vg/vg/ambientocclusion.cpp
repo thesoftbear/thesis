@@ -160,7 +160,7 @@ void ambientocclusion::trace_cones(voxelgrid & v)
 
 	glBindImageTexture(0, occlusion_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
 
-	float opening_angle = 45.f;
+	float opening_angle = 40.f;
 
 	trace_cones_shader.set("occlusion_texture", 0);
 	trace_cones_shader.set("opening_angle", radians(opening_angle));
@@ -198,7 +198,6 @@ void ambientocclusion::cast_rays(hashgrid & h)
 	ray_casting.set("cell_size", 1.f / h.get_resolution());
 	ray_casting.set("particle_size", h.get_particle_size());
 	ray_casting.set("ray_samples", samples);
-
 
 	ray_casting.execute(GL_TRIANGLE_STRIP, 0, 4);
 
