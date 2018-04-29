@@ -1,0 +1,166 @@
+#version 430
+
+layout(binding = 0) uniform sampler2D position_texture;
+layout(binding = 1) uniform sampler2D normal_texture;
+
+layout(r32f) uniform image2D occlusion_texture;
+
+uniform float pitch;
+uniform float roll;
+uniform uint cell_count;
+uniform float cell_size;
+uniform float particle_size;
+uniform float ray_samples;
+uniform vec2 resolution;
+
+float no_intersection = sqrt(3.0);
+
+layout(std430, binding = 2) readonly buffer cellInfoSSBO
+{
+	uvec2 cell_info[];
+};
+
+layout(std430, binding = 3) readonly buffer sortedSSBO
+{
+	vec4 particle_data[];
+};
+
+struct ray
+{
+	vec3 origin;
+	vec3 direction;
+};
+
+struct sphere
+{
+	vec3 center;
+	float radius;
+};
+
+float intersect_sphere(ray r, sphere s)
+{
+	vec3 oc = r.origin - s.center;
+	float b = dot(r.direction, oc);
+	float c = dot(oc, oc) - s.radius * s.radius;
+	float t = b * b - c;
+	if( t > 0.0) t = -b - sqrt(t);
+	return t;
+}
+
+mat4 create_rotation_matrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
+
+ivec3 position_to_cell(vec3 position)
+{
+	return ivec3(position * cell_count);
+}
+
+int cell_to_index(ivec3 cell)
+{
+	return cell.x + int(cell_count) * (cell.y + int(cell_count) * cell.z);
+}
+
+float intersect_cell(ray r, ivec3 cell)
+{
+	int index = cell_to_index(cell);
+	uvec2 info = cell_info[index];
+	
+	float closest_intersection = no_intersection;
+
+	for(uint p = 0; p < info.x; p++)
+	{
+		sphere s;
+		s.center = particle_data[info.y + p].xyz;
+		s.radius = particle_size;
+
+		float current_intersection = intersect_sphere(r, s);
+		if(current_intersection > 0.0 && current_intersection < closest_intersection) closest_intersection = current_intersection;
+	}
+
+	return closest_intersection;
+}
+
+void main()
+{
+	vec3 fragment_position = texture(position_texture, gl_FragCoord.xy / resolution).xyz;
+    vec3 fragment_normal = texture(normal_texture, gl_FragCoord.xy / resolution).xyz;
+
+	if(fragment_normal == vec3(0)) discard;
+
+	vec3 fragment_right = cross(fragment_normal, vec3(0, 1, 0));
+	mat4 pitch_matrix = create_rotation_matrix(fragment_right, pitch);
+	mat4 roll_matrix = create_rotation_matrix(fragment_normal, roll);
+
+	ray r = ray(fragment_position, (roll_matrix * pitch_matrix * vec4(fragment_normal, 1)).xyz);
+
+	vec3 right = normalize(cross(r.direction, vec3(0, 1, 0)));
+	vec3 up = normalize(cross(r.direction, right));
+
+	vec3 step = (r.direction / max(max(abs(r.direction.x), abs(r.direction.y)), abs(r.direction.z))) * cell_size;
+	vec3 cell_position = r.origin;
+
+	float closest_intersection = no_intersection;
+
+	while(closest_intersection == no_intersection)
+	{
+		// intersect with wave of partition cells
+
+		/*
+		for(float vertical = -cell_size; vertical <= cell_size; vertical += cell_size)
+		{
+			for(float horizontal = -cell_size; horizontal <= cell_size; horizontal += cell_size)
+			{
+				// get current partition cell
+
+				uvec3 cell = position_to_cell(cell_position + vertical * up + horizontal * right);
+
+				float cell_intersection = intersect_cell(r, cell);
+				if(cell_intersection > 0.0 && cell_intersection < closest_intersection) closest_intersection = cell_intersection;
+			}
+		}
+		*/
+
+		ivec3 cell = position_to_cell(cell_position);
+
+		for(int x = -1; x <= 1; x++)
+		{
+			for(int y = -1; y <= 1; y++)
+			{
+				for(int z = -1; z <= 1; z++)
+				{
+					float cell_intersection = intersect_cell(r, cell + ivec3(x, y, z));
+					if(cell_intersection > 0.0 && cell_intersection < closest_intersection) closest_intersection = cell_intersection;
+				}
+			}
+		}
+		
+		// move to next hashgrid cell
+
+		cell_position += step;
+
+		// check if still inside hashgrid
+
+		if(cell_position.x < 0.0 || cell_position.x > 1.0 || cell_position.y < 0.0 || cell_position.y > 1.0 || cell_position.z < 0.0 || cell_position.z > 1.0) break;
+	}
+
+	float lambda = 10.0;
+	float rho = 1.0 / (1.0 + lambda * closest_intersection);
+
+	float occlusion = rho * cos(pitch);
+
+	if(ray_samples > 0) occlusion += imageLoad(occlusion_texture, ivec2(gl_FragCoord.xy)).x; 
+
+	imageStore(occlusion_texture, ivec2(gl_FragCoord.xy), vec4(occlusion));
+
+	discard;
+}

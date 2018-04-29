@@ -9,7 +9,7 @@ using namespace std;
 
 struct application_state
 {
-	float elapsed;
+	float milliseconds_elapsed;
 	bool left_pressed;
 	bool right_pressed;
 	bool up_pressed;
@@ -18,6 +18,9 @@ struct application_state
 	bool out_pressed;
 	bool r_pressed;
 	bool v_pressed;
+	bool resolution_changed;
+	unsigned int framebuffer_width;
+	unsigned int framebuffer_height;
 };
 
 class application

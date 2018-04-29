@@ -148,43 +148,43 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\external\glad\src\glad.c" />
-    <ClCompile Include="ambientocclusion.cpp" />
+    <ClCompile Include="ambient_occlusion.cpp" />
     <ClCompile Include="application.cpp" />
+    <ClCompile Include="clock.cpp" />
     <ClCompile Include="error.cpp" />
-    <ClCompile Include="voxelgrid.cpp" />
+    <ClCompile Include="voxel_octree.cpp" />
     <ClCompile Include="hashgrid.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="particles.cpp" />
+    <ClCompile Include="particle_data.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="storage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ambientocclusion.hpp" />
+    <ClInclude Include="ambient_occlusion.hpp" />
     <ClInclude Include="application.hpp" />
+    <ClInclude Include="clock.hpp" />
     <ClInclude Include="error.hpp" />
-    <ClInclude Include="voxelgrid.hpp" />
+    <ClInclude Include="voxel_octree.hpp" />
     <ClInclude Include="hashgrid.hpp" />
-    <ClInclude Include="particles.hpp" />
+    <ClInclude Include="particle_data.hpp" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="storage.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cone_tracing.glfs" />
+    <None Include="clamp.glcs" />
+    <None Include="trace_cones.glfs" />
     <None Include="draw_occlusion.glfs" />
-    <None Include="draw_particles.glfs" />
-    <None Include="draw_particles.glvs" />
+    <None Include="draw_geometry.glfs" />
+    <None Include="draw_geometry.glvs" />
     <None Include="fullscreen_quad.glvs" />
     <None Include="gathering2.glcs" />
     <None Include="gathering3.glcs" />
     <None Include="mipmap.glcs" />
-    <None Include="ray_casting.glfs" />
-    <None Include="scattering_sorted2.glcs" />
-    <None Include="scattering_sorted3.glcs" />
-    <None Include="scattering_unsorted.glcs" />
-    <None Include="scattering_sorted.glcs" />
-    <None Include="scattering_texture.glfs" />
-    <None Include="scattering_texture.glgs" />
-    <None Include="scattering_texture.glvs" />
+    <None Include="cast_rays.glfs" />
+    <None Include="scatter.glcs" />
+    <None Include="scatter_rasterizer.glfs" />
+    <None Include="scatter_rasterizer.glgs" />
+    <None Include="scatter_rasterizer.glvs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

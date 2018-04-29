@@ -67,36 +67,37 @@ void shader::source(string a, string b, string c)
 void shader::set(string name, float value)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if (location == -1) error("uniform " + name + " not found");
-	else glUniform1f(location, value);
+	glUniform1f(location, value);
 }
 
 void shader::set(string name, unsigned int value)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if (location == -1) error("uniform " + name + " not found");
-	else glUniform1ui(location, value);
+	glUniform1ui(location, value);
 }
 
 void shader::set(string name, mat4 value)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if (location == -1) error("uniform " + name + " not found");
-	else glUniformMatrix4fv(location, 1, false, &value[0][0]);
+	glUniformMatrix4fv(location, 1, false, &value[0][0]);
 }
 
 void shader::set(string name, int value)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if (location == -1) error("uniform " + name + " not found");
-	else glUniform1i(location, value);
+	glUniform1i(location, value);
 }
 
 void shader::set(string name, unsigned int count, unsigned int * values)
 {
 	GLint location = glGetUniformLocation(id, name.c_str());
-	if(location == -1) error("uniform " + name + " not found");
-	else glUniform1uiv(location, count, values);
+	glUniform1uiv(location, count, values);
+}
+
+void shader::set(string name, vec2 value)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	glUniform2f(location, value.x, value.y);
 }
 
 void shader::use()

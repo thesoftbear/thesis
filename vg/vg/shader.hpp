@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace glm;
+
 #define glsl(...) #__VA_ARGS__
 
 class shader
@@ -24,6 +25,7 @@ class shader
 		void set(string name, int value);
 		void set(string name, mat4 value);
 		void set(string name, unsigned int count, unsigned int * values);
+		void set(string name, vec2 value);
 		void execute(unsigned int x, unsigned int y = 1, unsigned int z = 1);
 
 	private:

@@ -2,41 +2,33 @@
 
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 2) in;
 
-layout(std430, binding = 7) buffer densitySSBO
-{
-	uint density[];
-};
+layout(r32f, binding = 0) uniform image3D input_texture;
+layout(r32f, binding = 1) uniform image3D output_texture;
 
-uniform uint source_level_start;
-uniform uint source_level_resolution;
-uniform uint destination_level_start;
-uniform uint destination_level_resolution;
+uniform uint output_resolution;
 
 void main()
 {
-		uvec3 destination_position = gl_GlobalInvocationID;
+	ivec3 output_voxel = ivec3(gl_GlobalInvocationID);
 
-		if(destination_position.x >= destination_level_resolution || destination_position.y >= destination_level_resolution || destination_position.z >= destination_level_resolution) return;
+	if(output_voxel.x > output_resolution || output_voxel.y > output_resolution || output_voxel.z > output_resolution) return;
 
-		uint destination_index = destination_position.x + destination_level_resolution * (destination_position.y + destination_level_resolution * destination_position.z);
+	vec4 result;
 
-		uint result = 0;
-
-		for(uint z = 0; z < 2; z++)
+	for(int z = 0; z < 2; z++)
+	{
+		for(int y = 0; y < 2; y++)
 		{
-			for(uint y = 0; y < 2; y++)
+			for(int x = 0; x < 2; x++)
 			{
-				for(uint x = 0; x < 2; x++)
-				{
-					uvec3 source_position = destination_position * 2 + uvec3(x, y, z);
-					uint source_index = source_position.x + source_level_resolution * (source_position.y + source_level_resolution * source_position.z);
+				ivec3 input_voxel = output_voxel * 2 + ivec3(x, y, z);
 
-					result += density[source_level_start + source_index];
-				}
+				result += imageLoad(input_texture, input_voxel);
 			}
 		}
+	}
 
-		result /= 8;
+	result /= 8.0;
 
-		density[destination_level_start + destination_index] = result;
+	imageStore(output_texture, output_voxel, result);
 }

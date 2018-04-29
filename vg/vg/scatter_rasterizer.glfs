@@ -1,0 +1,66 @@
+#version 430
+		
+out float fragment_color;
+
+flat in vec3 sphere_center;
+flat in float sphere_radius_squared;
+flat in float cell_z;
+
+vec3 voxel_resolution = vec3(256);
+
+void main()
+{
+	vec3 cell_size = 1.0 / voxel_resolution;
+	
+	vec3 cell_min = vec3(gl_FragCoord.xy - 0.5, cell_z) * cell_size;
+	vec3 cell_max = cell_min + cell_size;
+
+	vec3 sphere_center_cell_min_distance = cell_min - sphere_center.xyz; 
+	vec3 sphere_center_cell_max_distance = cell_max - sphere_center.xyz;
+	
+	vec3 farthest_point = max(abs(sphere_center_cell_min_distance), abs(sphere_center_cell_max_distance));
+	
+	// cell completely in sphere? (when cell corner point with greatest distance from the sphere center lies in the sphere)
+
+		if (dot(farthest_point, farthest_point) - sphere_radius_squared < 0.0)
+		{
+			fragment_color = 1.0;
+			return;
+		}
+	
+	// sphere completely in cell? (when bounding box of sphere is contained in cell)
+
+		float radius = sqrt(sphere_radius_squared);
+
+		if (all(lessThanEqual(sphere_center_cell_min_distance, -vec3(radius))) && all(greaterThanEqual(sphere_center_cell_max_distance, vec3(radius))))
+		{
+			float sphere_volume = 4.0 / 3.0 * 3.14152 * sphere_radius_squared * radius;
+			float cell_volume = cell_size.x * cell_size.y * cell_size.z;
+			fragment_color = sphere_volume / cell_volume;
+			return;
+		}
+	
+	// sphere partially in cell (sampling)
+
+		const int samples_per_edge = 3;
+		const int samples_count = samples_per_edge * samples_per_edge * samples_per_edge;
+		const float step_size = 1.0 / samples_per_edge;
+		const float step_start = step_size / 2.0;
+
+		int hits = 0;
+	
+		for (int x = 0; x < samples_per_edge; x++)
+		{
+			for (int y = 0; y < samples_per_edge; y++)
+			{
+				for (int z = 0; z < samples_per_edge; z++)
+				{
+					vec3 sample_position = (cell_min + cell_size * (vec3(step_start) + vec3(float(x), float(y), float(z)) * step_size)) - sphere_center;
+
+					if (dot(sample_position, sample_position) - sphere_radius_squared < 0.0) hits++;
+				}
+			}
+		}
+
+		fragment_color = float(hits) / float(samples_count);
+}

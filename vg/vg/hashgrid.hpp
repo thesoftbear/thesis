@@ -1,31 +1,33 @@
 #pragma once
 
-#include "particles.hpp"
+#include "particle_data.hpp"
 #include "shader.hpp"
 
-class hashgrid
+class space_partitioning_grid
 {
 	public:
 	
-		hashgrid(unsigned int resolution);
-		void resize(unsigned int resolution);
-		void insert(particles & particles);
+		space_partitioning_grid();
+		void set_resolution(unsigned int resolution);
+		void insert_particles(particle_data & particles);
 		storage & get_cell_info();
-		storage & get_particle_data();
+		storage & get_particle_storage();
 		unsigned int get_resolution();
-		float get_particle_size();
-		unsigned int get_particle_number();
+		float get_particle_radius();
+		unsigned int get_particle_count();
+		void verify_partitioning(particle_data & particles);
 
 	private:
 
-		unsigned int _resolution;
-		storage _cell_info;
-		storage _particle_info;
-		storage _sorted_particles;
-		storage _prefix_data;
-		float particle_size;
-		unsigned int particle_number;
-		shader _hashing;
-		shader _prefixsum;
-		shader _sorting;
+		void hash_particles(particle_data & particles, storage & particle_info);
+		void calculate_addresses();
+		void sort_particles(particle_data & particles, storage & particle_info);
+		unsigned int resolution;
+		storage cell_info;
+		storage particle_storage;
+		float particle_radius;
+		unsigned int particle_count;
+		shader hashing_shader;
+		shader prefixsum_shader;
+		shader sorting_shader;
 };

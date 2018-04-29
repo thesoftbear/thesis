@@ -1,0 +1,116 @@
+#version 430
+#extension GL_NV_shader_atomic_float : enable
+
+layout(local_size_x = 32) in;
+
+
+// particle data
+
+layout(std430, binding = 0) readonly buffer particle_storage { vec4 particle_positions[]; };
+
+uniform uint particle_count;
+uniform float particle_radius;
+uniform float particle_radius_squared;
+
+
+// voxel octree data
+
+layout(r32f, binding = 0) uniform coherent image3D voxel_texture;
+
+uniform uint voxel_resolution;
+uniform float voxel_size;
+uniform float volume_ratio;
+uniform float voxel_inside_particle_distance_squared;
+uniform float particle_inside_voxel_distance_squared;
+uniform float no_intersection_distance_squared;
+
+
+// calculates a position's corresponding voxel
+
+ivec3 position_to_voxel(vec3 position)
+{
+	return clamp(ivec3(position * voxel_resolution), ivec3(0), ivec3(voxel_resolution - 1));
+}
+
+
+// calculates a voxel's corresponding position
+
+vec3 voxel_to_position(ivec3 voxel_coordinates)
+{
+	return (vec3(voxel_coordinates) + vec3(0.5)) * voxel_size;
+}
+
+
+// calculates the contribution of the particle at position "particle_position" to the voxel at position "voxel_position"
+
+float get_particle_contribution(vec3 voxel_position, vec3 particle_position)
+{
+	// get distance between voxel and particle
+
+	vec3 distance_vector = particle_position - voxel_position;
+	float distance_squared = dot(distance_vector, distance_vector);
+
+	// no intersection
+
+	if(distance_squared >= no_intersection_distance_squared) return 0;
+	
+	// voxel enclosed by particle
+
+	if(distance_squared <= voxel_inside_particle_distance_squared) return 1;
+
+	// particle enclosed by voxel
+
+	if(distance_squared <= particle_inside_voxel_distance_squared) return volume_ratio;
+
+	// count sampling points inside particle
+
+	float contribution_value = 0;
+
+	for(int z = -1; z <= 1; z++)
+	{
+		for(int y = -1; y <= 1; y++)
+		{
+			for(int x = -1; x <= 1; x++)
+			{
+				vec3 sample_vector = particle_position - (voxel_position + vec3(x, y, z) * (voxel_size / 3.0));
+				if(dot(sample_vector, sample_vector) <= particle_radius_squared) contribution_value += 1.0 / 27.0;
+			}
+		}
+	}
+
+	return contribution_value;
+}
+
+
+void main()
+{
+	// discard excess invocations
+
+		uint particle_index = gl_GlobalInvocationID.x;
+
+		if(particle_index >= particle_count) return;
+
+	// get particle position
+
+		vec3 particle_position = particle_positions[particle_index].xyz;
+		
+	// get intersected voxels
+
+		ivec3 min = position_to_voxel(particle_position - vec3(particle_radius));
+		ivec3 max = position_to_voxel(particle_position + vec3(particle_radius));
+
+	// for each voxel contribute density
+		
+		for(int z = min.z; z <= max.z; z++)
+		{
+			for(int y = min.y; y <= max.y; y++)
+			{
+				for(int x = min.x; x <= max.x; x++)
+				{
+					ivec3 voxel_coordinates = ivec3(x, y, z);
+					float particle_contribution = get_particle_contribution(voxel_to_position(ivec3(x, y, z)), particle_position);
+					imageAtomicAdd(voxel_texture, voxel_coordinates, particle_contribution);
+				}
+			}
+		}
+}

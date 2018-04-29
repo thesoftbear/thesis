@@ -1,0 +1,164 @@
+#version 430
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 2) in;
+
+
+// spatial partitioning grid data
+
+// per cell particle count & start address
+layout(std430, binding = 2) readonly buffer cell_info_storage { uvec2 cell_info[]; }; // x: particle count y: memory address
+
+// per cell sorted particles
+layout(std430, binding = 6) readonly buffer particle_storage { vec4 particle_positions[]; };
+
+uniform uint grid_resolution;
+uniform float particle_radius;
+uniform float particle_radius_squared;
+
+
+// voxel octree data
+
+layout(r32f, binding = 0) uniform coherent image3D voxel_texture;
+
+uniform uint voxel_resolution;
+uniform float voxel_size;
+uniform float volume_ratio;
+uniform float voxel_inside_particle_distance_squared;
+uniform float particle_inside_voxel_distance_squared;
+uniform float no_intersection_distance_squared;
+
+
+// calculates a position's corresponding cell
+
+ivec3 position_to_cell(vec3 position)
+{
+	return clamp(ivec3(position * grid_resolution), ivec3(0), ivec3(grid_resolution - 1));
+}
+
+
+// calculates a cells corresponding array index
+
+uint cell_to_index(ivec3 cell)
+{
+	return (cell.z * grid_resolution + cell.y) * grid_resolution + cell.x;
+}
+
+
+// calculates a voxel's corresponding position
+
+vec3 voxel_to_position(ivec3 voxel_coordinates)
+{
+	return (vec3(voxel_coordinates) + vec3(0.5)) * voxel_size;
+}
+
+
+// calculates the contribution of the particle at position "particle_position" to the voxel at position "voxel_position"
+
+float get_particle_contribution(vec3 voxel_position, vec3 particle_position)
+{
+	// get distance between voxel and particle
+
+	vec3 distance_vector = particle_position - voxel_position;
+	float distance_squared = dot(distance_vector, distance_vector);
+
+	// no intersection
+
+	if(distance_squared >= no_intersection_distance_squared) return 0;
+	
+	// voxel enclosed by particle
+
+	if(distance_squared <= voxel_inside_particle_distance_squared) return 1;
+
+	// particle enclosed by voxel
+
+	if(distance_squared <= particle_inside_voxel_distance_squared) return volume_ratio;
+
+	// count sampling points inside particle
+
+	float contribution_value = 0;
+
+	float sample_step = voxel_size / 3.0;
+	vec3 sample_base = particle_position - (voxel_position - vec3(sample_step));
+	float sample_contribution = 1.0 / 27.0;
+
+	for(uint z = 0; z < 3; z++)
+	{
+		for(uint y = 0; y < 3; y++)
+		{
+			for(uint x = 0; x < 3; x++)
+			{
+				vec3 sample_vector = sample_base - vec3(x, y, z) * sample_step;
+				if(dot(sample_vector, sample_vector) <= particle_radius_squared) contribution_value += sample_contribution;
+			}
+		}
+	}
+
+	return contribution_value;
+}
+
+
+// calculates the contributions of all particles in cell "cell_index" to the voxel at position "voxel_position"
+
+float get_cell_contribution(vec3 voxel_position, ivec3 cell_coordinates)
+{
+	// get cell index in cell_info_storage
+
+	uint cell_index = cell_to_index(cell_coordinates);
+
+	// get particle count and address of cell "cell_index"
+	
+	uvec2 current_info = cell_info[cell_index];
+
+	// density accumulation variable for this cell
+
+	float cell_contribution = 0;
+
+	// for each particle in cell "cell_index"
+
+	for(uint p = 0; p < current_info.x; p++)
+	{
+		// get particle position
+
+		vec3 particle_position = particle_positions[current_info.y + p].xyz;
+
+		// gather particle contribution
+
+		cell_contribution += get_particle_contribution(voxel_position, particle_position);
+	}		
+
+	return cell_contribution;
+}
+
+void main()
+{
+	// get voxel position
+
+	ivec3 voxel_coordinates = ivec3(gl_GlobalInvocationID);
+	vec3 voxel_position = voxel_to_position(voxel_coordinates);
+
+	// get cells with potential intersecions
+
+	vec3 offset = vec3(voxel_size * 0.5 + particle_radius);
+	ivec3 min = position_to_cell(voxel_position - offset);
+	ivec3 max = position_to_cell(voxel_position + offset);
+
+	// for each cell gather density
+
+	float voxel_density = 0;
+		
+	for(int z = min.z; z <= max.z; z++)
+	{
+		for(int y = min.y; y <= max.y; y++)
+		{
+			for(int x = min.x; x <= max.x; x++)
+			{
+				voxel_density += get_cell_contribution(voxel_position, ivec3(x, y, z));
+			}
+		}
+	}
+
+	// store density to voxel
+
+	imageStore(voxel_texture, voxel_coordinates, vec4(voxel_density));
+}
+

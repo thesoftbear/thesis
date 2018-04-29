@@ -4,7 +4,7 @@ layout(local_size_x = 32) in;
 
 // per particle position
 
-	layout(std430, binding = 0) readonly buffer particleDataSSBO
+	layout(std430, binding = 0) readonly buffer particle_data_storage
 	{
 		vec4 particle_data[];
 	};
@@ -12,7 +12,7 @@ layout(local_size_x = 32) in;
 
 // per particle cell & index inside cell
 
-	layout(std430, binding = 1) readonly buffer particleInfoSSBO
+	layout(std430, binding = 1) readonly buffer particle_info_storage
 	{
 		uvec2 particle_info[];
 	};
@@ -20,7 +20,7 @@ layout(local_size_x = 32) in;
 
 // per cell particle count & start address
 
-	layout(std430, binding = 2) readonly buffer cellInfoSSBO
+	layout(std430, binding = 2) readonly buffer cell_info_storage
 	{
 		uvec2 cell_info[];
 	};
@@ -28,15 +28,13 @@ layout(local_size_x = 32) in;
 
 // per cell sorted particles
 
-	layout(std430, binding = 6) writeonly buffer sortedDataSSBO
+	layout(std430, binding = 6) writeonly buffer sorted_particle_data_storage
 	{
-		vec4 sorted_data[];
+		vec4 sorted_particle_data[];
 	};
 
 
 uniform uint particle_count;
-
-#pragma optimize (off)
 
 void main()
 {
@@ -52,5 +50,5 @@ void main()
 
 		uint sorted_index = cell_info[i.x].y + i.y;
 		
-		sorted_data[sorted_index] = particle_data[particle_index];
+		sorted_particle_data[sorted_index] = particle_data[particle_index];
 }

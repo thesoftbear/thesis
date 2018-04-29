@@ -3,9 +3,9 @@
 
 #include <iostream>
 
-void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
-	cerr << "GL " << (type == GL_DEBUG_TYPE_ERROR ? "ERROR: " : "MESSAGE: ") << severity << " " << message << endl;
+	if(type == GL_DEBUG_TYPE_ERROR) cerr << "GL ERROR: " << severity << " " << message << endl;
 }
 
 application::application()
@@ -18,7 +18,7 @@ application::application()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(1280, 720, "Particle Ambient Occlusion", NULL, NULL);
+	window = glfwCreateWindow(1000, 1000, "Particle Ambient Occlusion", NULL, NULL);
 	
 	if (!window) error("glfw window creation failed");
 
@@ -39,7 +39,7 @@ application::application()
 	start_time = chrono::high_resolution_clock::now();
 
 	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
+	glDebugMessageCallback((GLDEBUGPROC)message_callback, 0);
 
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 }
@@ -55,7 +55,7 @@ bool application::step()
 {
 	// update time
 
-	state.elapsed = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - start_time).count() / 1000.f;
+	state.milliseconds_elapsed = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - start_time).count() / 1000.f;
 
 	// update input
 
@@ -67,6 +67,27 @@ bool application::step()
 	state.out_pressed = glfwGetKey(window, GLFW_KEY_O);
 	state.r_pressed = glfwGetKey(window, GLFW_KEY_R);
 	state.v_pressed = glfwGetKey(window, GLFW_KEY_V);
+
+	// update window size
+
+	state.resolution_changed = false;
+
+	int new_width, new_height;
+	glfwGetFramebufferSize(window, &new_width, &new_height);
+
+	if (new_width != state.framebuffer_width)
+	{
+		state.framebuffer_width = new_width;
+		state.resolution_changed = true;
+	} 
+	
+	if (new_height != state.framebuffer_height)
+	{
+		state.framebuffer_height = new_height;
+		state.resolution_changed = true;
+	}
+
+	if(state.resolution_changed) glViewport(0, 0, new_width, new_height);
 
 	// swap buffers
 

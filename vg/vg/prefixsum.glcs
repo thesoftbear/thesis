@@ -2,25 +2,19 @@
 
 layout(local_size_x = 32) in;
 
+struct thread_data { uvec2 info[16]; };
 
-// per cell particle count
+layout(std430, binding = 2) coherent buffer cell_info_storage
+{
+	thread_data cell_info[]; // x: count y: address
+}; 
 
-	struct thread_data
-	{
-		uvec2 info[16];
-	};
-
-	layout(std430, binding = 2) coherent buffer cellInfoSSBO
-	{
-		thread_data cell_info[]; // x: count y: address
-	};
-
-	layout(std430, binding = 3) coherent buffer globalSSBO
-	{
-		uint global_index;
-		uint global_sum;
-		uint next_index;
-	};
+layout(std430, binding = 3) coherent buffer synchronization_storage
+{
+	uint global_index;
+	uint global_sum;
+	uint next_index;
+};
 
 shared uint local_buffer[gl_WorkGroupSize.x];
 shared uint previous_sum;

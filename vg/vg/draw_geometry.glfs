@@ -1,0 +1,67 @@
+#version 430
+
+precision highp float;
+
+layout (location = 0) out vec3 fragment_position;
+layout (location = 1) out vec3 fragment_normal;
+
+flat in vec3 vertex_position;
+flat in vec3 original_position;
+
+uniform mat4 modelMatrix;
+uniform mat4 inverseModelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+uniform float particleSize;
+uniform vec2 resolution;
+
+struct ray
+{
+	vec3 origin;
+	vec3 direction;
+};
+
+struct sphere
+{
+	vec3 center;
+	float radius;
+};
+
+float intersect(ray r, sphere s)
+{
+	vec3 oc = r.origin - s.center;
+	float b = dot(r.direction, oc);
+	float c = dot(oc, oc) - s.radius * s.radius;
+	float t = b * b - c;
+	if( t > 0.0) t = -b - sqrt(t);
+	return t;
+}
+
+void main()
+{
+	vec4 coord = gl_FragCoord * vec4(vec2(2.0) / resolution, 2.0, 0.0) + vec4(-1, -1, -1, 1);
+	coord = inverse(projectionMatrix * viewMatrix) * coord;
+	coord /= coord.w;
+
+	ray r;
+	r.origin = -viewMatrix[3].xyz;
+	r.direction = normalize(coord.xyz - r.origin); 
+
+	sphere s;
+	s.center = vertex_position;
+	s.radius = particleSize;
+
+	float intersection = intersect(r, s);
+
+	if(intersection <= 0.0)
+	{
+		discard;
+	}
+	else
+	{
+		fragment_position = (inverseModelMatrix * vec4(r.origin + intersection * r.direction, 1.0)).xyz; 
+		fragment_normal = normalize(fragment_position - original_position);
+
+		gl_FragDepth = intersection / 3.0;
+	}
+}
